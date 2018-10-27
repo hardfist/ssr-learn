@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start":"node server/app.js",
+    "start": "PORT=4000 nodemon --exec babel-node server/app.js",
     "build": ""
   },
   "keywords": [],
@@ -12,6 +12,12 @@
   "license": "ISC",
   "dependencies": {
     "koa": "^2.6.1",
+    "koa-router": "^7.4.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.1.2",
+    "@babel/node": "^7.0.0",
+    "@babel/preset-env": "^7.1.0",
     "webpack": "^4.23.1",
     "webpack-dev-server": "^3.1.10"
   }
