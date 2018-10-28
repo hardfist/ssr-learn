@@ -7,7 +7,7 @@
     "clean": "rimraf output",
     "start": "PORT=4000 node output/server.js",
     "build": "webpack",
-    "codesandbox": "codesandbox ./",
+    "codesandbox": "codesandbox --public ./",
     "now": "now"
   },
   "keywords": [],
