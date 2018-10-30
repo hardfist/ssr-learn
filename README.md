@@ -120,4 +120,53 @@ module.exports = {
 ### hydrate
 现在我们的页面只是一个纯html页面，并不支持任何交互，为了支持用户交互我们需要对页面进行hydrate操作。
 此时我们不仅需要编译server的代码，还需要编译client的代码。因此我们需要两份配置文件，但是client和server的编译配置有很多共同的地方，
-因此考虑使用webpack-merge进行复用。
+因此考虑使用webpack-merge进行复用。此时有三个配置文件
+```jsx
+// scripts/webpack/config/webpack.config.base.js
+const path = require("path");
+const webpack = require('webpack');
+const baseConfig = {
+  context: process.cwd(),
+  mode: "production",
+  output: {
+    path: path.join(root,'output'),
+    filename: "server.js",
+    publicPath: "/"
+  },
+  module: {
+    rules: [{ test: /\.(js)$/, use: "babel-loader" }]
+  }
+};
+
+module.exports = baseConfig;
+```
+```jsx
+// scripts/webpack/config/webpack.config.server.js
+module.exports = merge(baseConfig, {
+  mode: "development",
+  devtool: 'source-map',
+  entry: "./src/server/app.js",
+  target: "node",
+  output: {
+    filename: 'server.js',
+    libraryTarget: 'commonjs2'
+  },
+  externals: [nodeExternals()]
+});
+
+```
+```jsx
+// scripts/webpack/config/webpack.config.client.js
+module.exports = merge(baseConfig, {
+  entry: {
+    main: './src/client/index.js'
+  },
+  target: 'web',
+  output: {
+    filename: "[name].[chunkhash:8].js" // 设置hash用于缓存更新
+  },
+  plugins: [
+    new manifestPlugin()
+  ]
+});
+```

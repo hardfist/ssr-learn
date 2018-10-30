@@ -8,7 +8,7 @@ module.exports = merge(baseConfig, {
   },
   target: 'web',
   output: {
-    filename: "client.js"
+    filename: "[name].[chunkhash:8].js"
   },
   plugins: [
     new manifestPlugin()
