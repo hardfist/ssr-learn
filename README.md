@@ -117,3 +117,7 @@ module.exports = {
 
 ```
 这里值得注意的是`@babel/env`的module设置为false，可以更好地支持treeshaking，减小最终的打包大小。
+### hydrate
+现在我们的页面只是一个纯html页面，并不支持任何交互，为了支持用户交互我们需要对页面进行hydrate操作。
+此时我们不仅需要编译server的代码，还需要编译client的代码。因此我们需要两份配置文件，但是client和server的编译配置有很多共同的地方，
+因此考虑使用webpack-merge进行复用。

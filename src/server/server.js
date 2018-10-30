@@ -1,9 +1,12 @@
 import Koa from "koa";
 import React from "react";
+import serve from 'koa-static';
 import { renderToString } from "react-dom/server";
 import App from "../client/app";
+const manifest = require(process.env.appManifest);
 
 const app = new Koa();
+app.use(serve(process.env.appBuild))
 app.use(async ctx => {
   const markup = renderToString(<App />);
   ctx.body = `
@@ -15,11 +18,12 @@ app.use(async ctx => {
       <body>
         <div id="root">${markup}</div>
       </body>
+      <script src="${manifest['main.js']}"></script>
     </html>
   `;
 });
 export async function startServer() {
-  app.listen(process.env.PORT, () => {
-    console.log("start server at port:", process.env.PORT);
+  app.listen(process.env.PORT||3000, () => {
+    console.log("start server at port:", process.env.PORT||3000);
   });
 }

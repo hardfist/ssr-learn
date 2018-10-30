@@ -6,7 +6,7 @@
     "dev": "webpack -w & PORT=4000 nodemon output/server.js",
     "clean": "rimraf output",
     "start": "PORT=4000 node output/server.js",
-    "build": "webpack",
+    "build": "node ./scripts/webpack/build.js",
     "codesandbox": "codesandbox --public ./",
     "now": "now"
   },
@@ -16,18 +16,24 @@
   "dependencies": {
     "koa": "^2.6.1",
     "koa-router": "^7.4.0",
+    "koa-static": "^5.0.0",
     "react": "^16.6.0",
-    "react-dom": "^16.6.0"
+    "react-dom": "^16.6.0",
+    "webpack-manifest-plugin": "^2.0.4"
   },
   "devDependencies": {
     "@babel/cli": "^7.1.2",
     "@babel/core": "^7.1.2",
     "@babel/node": "^7.0.0",
+    "@babel/plugin-proposal-class-properties": "^7.1.0",
     "@babel/preset-env": "^7.1.0",
     "@babel/preset-react": "^7.0.0",
     "babel-loader": "^8.0.4",
+    "colors": "^1.3.2",
+    "fs-extra": "^7.0.0",
     "nodemon": "^1.18.5",
     "npm-run-all": "^4.1.3",
+    "react-dev-utils": "^6.1.0",
     "rimraf": "^2.6.2",
     "webpack": "^4.23.1",
     "webpack-cli": "^3.1.2",
