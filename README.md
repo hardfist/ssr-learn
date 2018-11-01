@@ -166,7 +166,72 @@ module.exports = merge(baseConfig, {
     filename: "[name].[chunkhash:8].js" // 设置hash用于缓存更新
   },
   plugins: [
-    new manifestPlugin()
+    new manifestPlugin() // server端用于获取生成的前端文件名
   ]
 });
 ```
+build后再output里生成信息如下：
+```sh
+output
+├── main.f695bcf8.js # client编译文件
+├── manifest.json # manifest 文件
+├── server.js # server编译文件
+└── server.js.map # server编译文件的sourcemap
+```
+对于生成环境的前端代码，需要包含版本信息，以便用于版本更新，我们用chunkhash作为其版本号，每次代码更新后都会生成新的hash值，因此
+server端需要获取每次编译后生成的版本信息，以用于下发正确的版本。这里有两种处理方式：
+1. 使用html-webpack-plugin生成带有js版本的html文件，server端直接渲染生成的html
+2. server端通过webpack-manifest-plugin生成编译后的manifest信息，server在自己使用的模板里插入对应的js代码。
+第一种方式比较简单，且对于各种资源注入有很好的支持，但是这样html-webpack-plugin接管了server端的渲染逻辑，且只能生成html文件，server端比较难以扩展，第二种方式需要用户自己处理各种资源注入逻辑，但是有良好的扩展性，可以轻松支持多种模板。
+我们此处使用第一种方式。
+
+### 变量注入
+有些场景我们需要在代码中注入一些变量，例如
++ 一份代码需要运行在不同的环境，如development，staging，production环境，需要在代码中根据不同的环境处理不同的逻辑
++ 很多node_moudles会根据不同的process.env.NODE_ENV读取不同的代码，如react在process.node.NODE_ENV === 'production'下会读取的是压缩后的代码，这样能保证线上的代码体积打包更小。
++ 不同的用户会下发不同的参数，如在AB测情况下，server会给不同用户下发不同的参数，代码中根据不同的参数，呈现不同的结果。
+变量注入可以分为运行时注入和编译时注入
+#### 运行时注入
+前端的运行是可以通过读取server端下发的window.xxx变量实现，比较简单，
+服务端变量注入通常有两种方式配置文件和配置环境变量。
+##### 配置文件
+我们可以为不同环境配置不同的配置文件,如eggjs的多环境配置就是通过不同的配置文件实现的根据EGG_SERVER_ENV读取不同的配置文件，其config如下所示,
+```sh
+config
+|- config.default.js
+|- config.prod.js
+|- config.unittest.js
+`- config.local.js
+```
+配置文件有其局限性，因为配置文件通常是和代码一起提交到代码仓库里的，不能在配置文件里存放一些机密信息，如数据库账号和密码等，
+##### 环境变量
+配置文件难以在运行时进行热更新，如我们需要对某些服务进行降级，需要在运行时替换掉某个变量的值。这些情况可以考虑使用环境变量进行变量注入。环境变量注入通常有如下如下用途：
+1. 结合配置文件使用，根据环境变量读取不同的配置文件
+2. 运行时控制:环境变量通过配置中心配置，代码运行时定时读取更新的配置变量，可以用于手动的降级控制。
+
+
+有多个地方可以注入环境变量:
+1. 代码注入
+   ```js
+    process.env.NODE_ENV = 'production'
+    ....
+  ```
+2. 启动命令时注入
+   ```js
+   // package.json
+   ....
+   "scripts": {
+    "build": "NODE_ENV=production webpack"
+   }
+   ....
+   ```
+3. 运行环境注入，大多数的ci平台都支持配置环境
+#### 编译时注入
+
+借助于webpack和babel强大的功能我们可以实现编译时注入变量，相比于运行时注入，编译时注入可以实现运行时注入无法实现的功能
+1. 配合webpack的Tree Shaking功能，我们可以在编译时把无关代码删除
+2. 可以在代码中实现DSL，编译时替换为实际的js代码。
+
+有两种方法可以实现编译时注入
+1. [DefinePlugin](https://webpack.docschina.org/plugins/define-plugin/),DefinePlugin 允许创建一个在编译时可以配置的全局变量。这可能会不同的环境变量编译出不同版本的代码。一个最简单的场景就是通过process.env.NODE_ENV控制加载的版本,babel-plugin-transform-define也可以实现相同功能。
+2. babel-plugin-marco可以实现更加复杂的编译时替换功能，例如我们可以通过babel-plugin-macro扩充支持import的语法，使得其可以支持`import files * from 'dir/*'`之类的批量导入，这在很多场景下都非常有作用。
