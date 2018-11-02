@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "dev": "webpack -w & PORT=4000 nodemon output/server.js",
+    "dev": "webpack -w & nodemon output/server.js",
     "clean": "rimraf output",
-    "start": "PORT=4000 node output/server.js",
+    "start": "node output/server.js",
     "build": "node ./scripts/webpack/build.js",
     "codesandbox": "codesandbox  ./ ",
     "now": "now"
@@ -14,6 +14,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "dotenv": "^6.1.0",
     "koa": "^2.6.1",
     "koa-router": "^7.4.0",
     "koa-static": "^5.0.0",

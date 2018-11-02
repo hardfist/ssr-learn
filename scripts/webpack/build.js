@@ -1,3 +1,4 @@
+process.env.NODE_ENV = 'production';
 const serverConfig = require("./config/webpack.config.server");
 const clientConfig = require("./config/webpack.config.client");
 require("colors");

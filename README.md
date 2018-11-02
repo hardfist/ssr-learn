@@ -118,6 +118,7 @@ module.exports = {
 ```
 这里值得注意的是`@babel/env`的module设置为false，可以更好地支持treeshaking，减小最终的打包大小。
 ### hydrate
+[在线示例2-hydrate](https://codesandbox.io/s/9469r7xxlo)
 现在我们的页面只是一个纯html页面，并不支持任何交互，为了支持用户交互我们需要对页面进行hydrate操作。
 此时我们不仅需要编译server的代码，还需要编译client的代码。因此我们需要两份配置文件，但是client和server的编译配置有很多共同的地方，
 因此考虑使用webpack-merge进行复用。此时有三个配置文件
@@ -235,3 +236,22 @@ config
 有两种方法可以实现编译时注入
 1. [DefinePlugin](https://webpack.docschina.org/plugins/define-plugin/),DefinePlugin 允许创建一个在编译时可以配置的全局变量。这可能会不同的环境变量编译出不同版本的代码。一个最简单的场景就是通过process.env.NODE_ENV控制加载的版本,babel-plugin-transform-define也可以实现相同功能。
 2. babel-plugin-marco可以实现更加复杂的编译时替换功能，例如我们可以通过babel-plugin-macro扩充支持import的语法，使得其可以支持`import files * from 'dir/*'`之类的批量导入，这在很多场景下都非常有作用。
+
+在本例子中我们通过process.env和definePlugin向项目中注入`appBuild`和`appManifest`两个变量，其默认值在`path.js`里定义
+```js
+// scripts/webpack/config/paths.js
+const path = require('path');
+const fs = require('fs');
+const appDirectory = fs.realpathSync(process.cwd());
+const resolveApp = relativePath => path.resolve(appDirectory, relativePath);
+
+module.exports = {
+  appManifest: resolveApp('output/manifest.json'),
+  appBuild: resolveApp('output')
+}
+```
+#### dotenv
+[12factory]https://12factor.net/zh_cn/config 提倡在环境中存储配置，我们使用dotenv来实现在环境中存储配置。这样方便我们在不同的环境下
+对覆盖进行覆盖操作。根据[rails_dotenv](https://github.com/bkeepers/dotenv#what-other-env-files-can-i-use)的规范，我们会一次加载`${paths.dotenv}.${NODE_ENV}.local`,`${paths.dotenv}.${NODE_ENV}`,`${paths.dotenv}.local`,`paths.dotenv`配置文件，前者会覆盖后者的配置。如在本例子中我们可以在.env.production里覆盖设置`PORT=4000`覆盖默认端口。
+
+

@@ -5,5 +5,7 @@ const resolveApp = relativePath => path.resolve(appDirectory, relativePath);
 
 module.exports = {
   appManifest: resolveApp('output/manifest.json'),
-  appBuild: resolveApp('output')
+  appBuild: resolveApp('output'),
+  appPath: resolveApp('.'),
+  dotenv: resolveApp('.env')
 }
