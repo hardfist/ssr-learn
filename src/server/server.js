@@ -13,6 +13,7 @@ app.use(async ctx => {
    <html>
       <head>
         <title>SSR with RR</title>
+        <link rel="stylesheet" href="${manifest['main.css']}">
       </head>
 
       <body>

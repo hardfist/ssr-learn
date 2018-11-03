@@ -5,13 +5,14 @@ process.on('unhandledRejection', err => {
   console.error('error:', err);
   throw err;
 });
-//const fs = require("fs-extra");
 const path = require("path");
+const paths = require('./config/paths');
+const fs = require('fs-extra');
 const createConfig = require("./config/createConfig");
 const formatWeebpackMessages = require("react-dev-utils/formatWebpackMessages");
 const webpack = require("webpack");
 async function build() {
-  //fs.emptyDirSync(path.join(process.cwd(), "output"));
+  fs.emptyDirSync(paths.appBuild);
   const clientConfig = createConfig("web", "prod");
   const serverConfig = createConfig("node", "web");
   console.log("Production build");

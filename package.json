@@ -14,12 +14,18 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "autoprefixer": "^9.3.1",
+    "css-loader": "^1.0.1",
     "dotenv": "^6.1.0",
     "koa": "^2.6.1",
     "koa-router": "^7.4.0",
     "koa-static": "^5.0.0",
+    "mini-css-extract-plugin": "^0.4.4",
+    "postcss-flexbugs-fixes": "^4.1.0",
+    "postcss-loader": "^3.0.0",
     "react": "^16.6.0",
     "react-dom": "^16.6.0",
+    "style-loader": "^0.23.1",
     "webpack-manifest-plugin": "^2.0.4"
   },
   "devDependencies": {

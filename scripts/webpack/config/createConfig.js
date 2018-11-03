@@ -1,14 +1,11 @@
 module.exports = (target = "web", env = "dev") => {
-  const IS_NODE = target === "node";
-  const IS_WEB = target === "web";
   const IS_PROD = env === "prod";
-  const IS_DEV = env === "dev";
-  process.env.NODE_ENV = IS_PROD;
-  const serverConfig = require("./webpack.config.server");
-  const clientConfig = require("./webpack.config.client");
+  // 设置 TARGET 和 NODE_ENV 控制 webpack的config内容
+  process.env.NODE_ENV = IS_PROD ? "production" : "development";
+  process.env.TARGET = target;
   if (target === "web") {
-    return clientConfig;
+    return require("./webpack.config.client")(target, env);
   } else {
-    return serverConfig;
+    return require("./webpack.config.server")(target, env);
   }
 };
