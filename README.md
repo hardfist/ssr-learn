@@ -273,4 +273,24 @@ module.exports = {
 }
 ```
 
-
+#### 配置插件化
+随着项目越来越复杂，我们的webpack配置也会变的越来越复杂，且难以阅读和扩展，除了将webpack的配置拆分为client和server我们可以考虑将wepback的配置进行插件化，将每个扩展功能通过插件的形式集成到原有的webpack配置中。如本例子中可以将js编译的部分抽取出来
+```js
+// webpack.config.parts.js
+exports.loadJS = ({ include, exclude }) => ({
+  module: {
+    rules: [
+      {
+        test: /\.(js|jsx|mjs)$/,
+        use: "babel-loader",
+        include,
+        exclude
+      }
+    ]
+  }
+});
+// webpack.config.js
+const commonConfig = merge([
+  ...parts.loadJS({ include: paths.appSrc })
+]);
+```
