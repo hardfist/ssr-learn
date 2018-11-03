@@ -424,8 +424,7 @@ const loadCSS = ({ include, exclude }) => {
   };
 };
 ```
-
-prod 模式下，我们还需要在 html 里引入 css，使用 manifest 即可轻松实现。
+css module的支持和上面类似，prod 模式下，我们还需要在 html 里引入 css，使用 manifest 即可轻松实现。
 
 ```js
 ctx.body = `

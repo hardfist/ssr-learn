@@ -19,8 +19,12 @@ const baseConfig = (target, env) => {
       },
       plugins: [new webpack.DefinePlugin(envs.stringified)]
     },
-    parts.loadJS({ include: paths.appSrc }),
-    parts.loadCSS({ exclude: paths.appBuild })
+    parts.load_css_module({ exclude: [paths.appBuild] }),
+    parts.load_css({
+      include: [paths.appSrc],
+      exclude: [paths.appBuild, /\.module\.css$/]
+    }),
+    parts.load_js({ exclude: paths.appBuild })
   );
 };
 
