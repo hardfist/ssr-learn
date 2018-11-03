@@ -1,16 +1,15 @@
-const baseConfig = require('./webpack.config.base');
+const baseConfig = require("./webpack.config.base");
 const merge = require("webpack-merge");
-const manifestPlugin = require('webpack-manifest-plugin');
+const manifestPlugin = require("webpack-manifest-plugin");
+const paths = require('./paths');
 
 module.exports = merge(baseConfig, {
   entry: {
-    main: './src/client/index.js'
+    main: paths.appClientEntry
   },
-  target: 'web',
+  target: "web",
   output: {
     filename: "[name].[chunkhash:8].js"
   },
-  plugins: [
-    new manifestPlugin()
-  ]
+  plugins: [new manifestPlugin()]
 });

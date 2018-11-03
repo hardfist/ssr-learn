@@ -27,7 +27,9 @@ const getClientEnv = target => {
     PORT: process.env.PORT || 3000,
     PUBLIC_PATH: process.env.PUBLIC_PATH || "/",
     appManifest: paths.appManifest,
-    appBuild: paths.appBuild
+    appBuild: paths.appBuild,
+    appSrc: paths.appSrc,
+    appPath: paths.appPath
   };
   const stringified = Object.keys(raw).reduce((env, key) => {
     env[`process.env.${key}`] = JSON.stringify(raw[key]);

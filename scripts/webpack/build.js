@@ -1,13 +1,19 @@
-process.env.NODE_ENV = 'production';
-const serverConfig = require("./config/webpack.config.server");
-const clientConfig = require("./config/webpack.config.client");
+process.env.NODE_ENV = "production";
+require('./config/env');
 require("colors");
+process.on('unhandledRejection', err => {
+  console.error('error:', err);
+  throw err;
+});
 //const fs = require("fs-extra");
 const path = require("path");
+const createConfig = require("./config/createConfig");
 const formatWeebpackMessages = require("react-dev-utils/formatWebpackMessages");
 const webpack = require("webpack");
 async function build() {
   //fs.emptyDirSync(path.join(process.cwd(), "output"));
+  const clientConfig = createConfig("web", "prod");
+  const serverConfig = createConfig("node", "web");
   console.log("Production build");
   console.log("Compiling client....");
   try {
@@ -17,14 +23,14 @@ async function build() {
     process.exit(1);
   }
   console.log("Build client success".green);
-  console.log('Compiling server....')
+  console.log("Compiling server....");
   try {
     await compile(serverConfig);
-  }catch(err){
+  } catch (err) {
     console.error(`Build server error: ${err.message}`.red);
     process.exit(1);
   }
-  console.log('Build server success'.green);
+  console.log("Build server success".green);
 }
 function compile(config) {
   let compiler;

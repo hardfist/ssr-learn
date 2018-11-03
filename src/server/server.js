@@ -2,7 +2,7 @@ import Koa from "koa";
 import React from "react";
 import serve from 'koa-static';
 import { renderToString } from "react-dom/server";
-import App from "../client/app";
+import App from "../client/entry/app";
 const manifest = require(process.env.appManifest);
 
 const app = new Koa();
