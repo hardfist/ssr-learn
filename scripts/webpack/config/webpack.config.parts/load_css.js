@@ -1,24 +1,9 @@
-const paths = require("./paths");
 const autoprefixer = require("autoprefixer");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 module.exports = (target, env) => {
-  const IS_NODE = target === "node";
-  const IS_WEB = target === "web";
-  const IS_PROD = env === "prod";
-  const IS_DEV = env === "dev";
-  console.log("is_node:", IS_NODE, IS_PROD);
-  const loadJS = ({ include, exclude }) => ({
-    module: {
-      rules: [
-        {
-          test: /\.(js|jsx|mjs)$/,
-          use: "babel-loader",
-          include,
-          exclude
-        }
-      ]
-    }
-  });
+  const IS_NODE = target === 'node';
+  const IS_DEV = env === 'dev';
+  const IS_PROD = env === 'prod';
   const postCssOptions = {
     ident: "postcss", // https://webpack.js.org/guides/migrating/#complex-options
     plugins: () => [
@@ -34,7 +19,7 @@ module.exports = (target, env) => {
       })
     ]
   };
-  const loadCSS = ({ include, exclude }) => {
+  const load_css = ({ include, exclude }) => {
     let css_loader_config = {};
     const postcss_loader = {
       loader: "postcss-loader",
@@ -96,15 +81,82 @@ module.exports = (target, env) => {
         rules: [
           {
             test: /\.css$/,
-            use: css_loader_config
+            use: css_loader_config,
+            exclude,
+            include
           }
         ]
       }
     };
   };
 
+  const load_css_module = ({ include, exclude }) => {
+    let css_module_config = {};
+    const postcss_loader = {
+      loader: "postcss-loader",
+      options: postCssOptions
+    };
+    if (IS_NODE) {
+      // servre编译只需要能够解析css，并不需要实际的生成css文件
+      css_module_config = [
+        {
+          loader: "css-loader/locals",
+          options: {
+            importLoaders: 1,
+            modules: true,
+            localIdentName: "[path]__[name]___[local]"
+          }
+        },
+        postcss_loader
+      ];
+    } else if (IS_DEV) {
+      // client 编译且为development下，使用style-loader以便支持热更新
+      css_module_config = [
+        "style-loader",
+        {
+          loader: "css-loader",
+          options: {
+            importLoaders: 1,
+            modules: true,
+            localIdentName: "[path]__[name]___[local]"
+          }
+        },
+        postcss_loader
+      ];
+    } else {
+      // client编译且为production下，需要将css抽取出单独的css文件,并且需要对css进行压缩
+      css_module_config = [
+        MiniCssExtractPlugin.loader,
+        {
+          loader: require.resolve("css-loader"),
+          options: {
+            importLoaders: 1,
+            modules: true,
+            localIdentName: "[path]__[name]___[local]",
+            minimize: true // 压缩编译后生成的css文件
+          }
+        },
+        {
+          loader: require.resolve("postcss-loader"),
+          options: postCssOptions
+        }
+      ];
+    }
+    return {
+      module: {
+        rules: [
+          {
+            test: /\.module\.css$/,
+            use: css_module_config,
+            include,
+            exclude
+          }
+        ]
+      }
+    };
+  };
   return {
-    loadCSS,
-    loadJS
+    load_css,
+    load_css_module
   };
 };
