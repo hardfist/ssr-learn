@@ -254,4 +254,23 @@ module.exports = {
 [12factory]https://12factor.net/zh_cn/config 提倡在环境中存储配置，我们使用dotenv来实现在环境中存储配置。这样方便我们在不同的环境下
 对覆盖进行覆盖操作。根据[rails_dotenv](https://github.com/bkeepers/dotenv#what-other-env-files-can-i-use)的规范，我们会一次加载`${paths.dotenv}.${NODE_ENV}.local`,`${paths.dotenv}.${NODE_ENV}`,`${paths.dotenv}.local`,`paths.dotenv`配置文件，前者会覆盖后者的配置。如在本例子中我们可以在.env.production里覆盖设置`PORT=4000`覆盖默认端口。
 
+#### 收敛配置
+为了方便项目的扩展，我们将原来在项目中硬编码的一些常量配置进行统一处理，大部分和路径相关的配置收敛到`scripts/webpack/config/paths`目录下。
+```js
+const path = require('path');
+const fs = require('fs');
+const appDirectory = fs.realpathSync(process.cwd());
+const resolveApp = relativePath => path.resolve(appDirectory, relativePath);
+
+module.exports = {
+  appManifest: resolveApp('output/manifest.json'), // client编译manifest
+  appBuild: resolveApp('output'), //client && server编译生成目录
+  appSrc: resolveApp('src'), // cliet && server source dir
+  appPath: resolveApp('.'), // 项目根目录
+  dotenv: resolveApp('.env'), // .env文件
+  appClientEntry: resolveApp('src/client/entry'), // client 的webpack入口
+  appServerEntry: resolveApp('src/server/app'), // server 的webpack入口
+}
+```
+
 
