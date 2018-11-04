@@ -1,5 +1,6 @@
 const baseConfig = require("./webpack.config.base");
 const merge = require("webpack-merge");
+const webpack = require("webpack");
 const manifestPlugin = require("webpack-manifest-plugin");
 const paths = require("./paths");
 module.exports = (target, env) =>
@@ -11,5 +12,11 @@ module.exports = (target, env) =>
     output: {
       filename: "[name].[chunkhash:8].js"
     },
-    plugins: [new manifestPlugin()]
+    plugins: [
+      new manifestPlugin(),
+      new webpack.DefinePlugin({
+        __BROWSER__: JSON.stringify(true),
+        __NODE__: JSON.stringify(false)
+      })
+    ]
   });

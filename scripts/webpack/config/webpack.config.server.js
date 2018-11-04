@@ -1,5 +1,6 @@
 const baseConfig = require("./webpack.config.base");
 const nodeExternals = require("webpack-node-externals");
+const webpack = require('webpack');
 const merge = require("webpack-merge");
 const paths = require("./paths");
 
@@ -13,5 +14,11 @@ module.exports = (target, env) =>
       filename: "server.js",
       libraryTarget: "commonjs2"
     },
-    externals: [nodeExternals()]
+    externals: [nodeExternals()],
+    plugins: [
+      new webpack.DefinePlugin({
+        __BROWSER__: JSON.stringify(false),
+        __NODE__: JSON.stringify(true)
+      })
+    ]
   });

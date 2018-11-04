@@ -441,3 +441,60 @@ ctx.body = `
     </html>
   `;
 ```
+
+### Code Fence
+有时我们需要控制代码只在客户端或者服务端执行，如果在server里直接使用了`window`或者`document`这种仅在浏览器可访问的对象，则会在server端报错，反之在client里直接发使用了`fs`这样的对象也会报错。
+
+对于共享于服务器和客户端，但用于不同平台 API 的任务，建议将平台特定实现包含在通用 API 中，或者使用为你执行此操作的 library。例如，axios 是一个 HTTP 客户端，可以向服务器和客户端都暴露相同的 API。
+
+对于仅浏览器可用的 API，通常方式是，1.在「纯客户端」的生命周期钩子函数中惰性访问它们（如`react`的`componentDidMount`)。
+
+请注意，考虑到如果第三方 library 不是以上面的通用用法编写，则将其集成到服务器渲染的应用程序中，可能会很棘手。你可能要通过模拟(mock)一些全局变量来使其正常运行（如可以通过 jsdom 来 mock 浏览器的 dom 对象，进行 html 解析），但这只是 hack 的做法，并且可能会干扰到其他 library 的环境检测代码(很多的第三方库判断执行环境的代码很粗暴，通常只是判断`typeof document === 'undefined'`，这是如果你mock了`document`对象，会导致第三方库的判断代码出错)。
+
+因此相比于运行时判断执行环境，我们更倾向于在编译时判断执行环境。我们使用一种称为[Code Fence](https://fusionjs.com/docs/getting-started/core-concepts/#code-fence)的技术来实现在编译时区分执行环境。
+其实现方式很简单，通过webpack的[definePlugin](https://webpack.docschina.org/plugins/define-plugin/)为client和server定义两个不同的全局常量。
+```js
+// webpack.config.client.js
+{
+  ...
+  plugins: [
+    new webpack.DefinePlugin({
+        __BROWSER__: JSON.stringify(true),
+        __NODE__: JSON.stringify(false)
+      })
+  ]
+  ...
+}
+// webpack.config.server.js
+
+{
+  ...
+  plugins: [
+    new webpack.DefinePlugin({
+        __BROWSER__: JSON.stringify(false),
+        __NODE__: JSON.stringify(true)
+    })
+  ]
+  ...
+}
+```
+本例中我们就可以使用`Code Fence`来统一client和server引入app的入口了。由于client和server渲染执行的逻辑不一致，
+client执行hydrate操作，而server端执行renderToString操作，导致两者导入app的入口无法保持一致。我们可以通过`Code Fence`在
+同一个文件里为client和server导出不同的内容。
+```js
+// src/client/entry/index.js
+import App from "./app";
+import ReactDOM from "react-dom";
+import React from "react";
+
+const clientRender = () => {
+  return ReactDOM.hydrate(<App />, document.getElementById("root"));
+};
+
+const serverRender = props => {
+  return <App {...props} />;
+};
+
+export default (__BROWSER__ ? clientRender() : serverRender);
+```
+
