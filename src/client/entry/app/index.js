@@ -1,9 +1,9 @@
-import React from "react";
-import styles from "./index.module.css";
-import "./index.css";
+import React from 'react';
+import styles from './index.module.css';
+import './index.css';
 export default class App extends React.Component {
   clickHandler = () => {
-    alert("hello");
+    alert('hello');
   };
   render() {
     return (
