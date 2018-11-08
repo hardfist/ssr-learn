@@ -1,18 +1,18 @@
-const baseConfig = require("./webpack.config.base");
-const nodeExternals = require("webpack-node-externals");
+const baseConfig = require('./webpack.config.base');
+const nodeExternals = require('webpack-node-externals');
 const webpack = require('webpack');
-const merge = require("webpack-merge");
-const paths = require("./paths");
+const merge = require('webpack-merge');
+const paths = require('./paths');
 
 module.exports = (target, env) =>
   merge(baseConfig(target, env), {
-    mode: "development",
-    devtool: "source-map",
+    mode: 'development',
+    devtool: 'source-map',
     entry: paths.appServerEntry,
-    target: "node",
+    target: 'node',
     output: {
-      filename: "server.js",
-      libraryTarget: "commonjs2"
+      filename: 'server.js',
+      libraryTarget: 'commonjs2'
     },
     externals: [nodeExternals()],
     plugins: [

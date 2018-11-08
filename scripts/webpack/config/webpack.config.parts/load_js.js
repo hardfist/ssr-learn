@@ -1,10 +1,10 @@
-module.exports = (target, env) => {
+module.exports = () => {
   const load_js = ({ include, exclude }) => ({
     module: {
       rules: [
         {
           test: /\.(js|jsx|mjs)$/,
-          use: "babel-loader",
+          use: 'babel-loader',
           include,
           exclude
         }

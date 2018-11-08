@@ -1,44 +1,43 @@
-process.env.NODE_ENV = "production";
+process.env.NODE_ENV = 'production';
 require('./config/env');
-require("colors");
+require('colors');
 process.on('unhandledRejection', err => {
   console.error('error:', err);
   throw err;
 });
-const path = require("path");
 const paths = require('./config/paths');
 const fs = require('fs-extra');
-const createConfig = require("./config/createConfig");
-const formatWeebpackMessages = require("react-dev-utils/formatWebpackMessages");
-const webpack = require("webpack");
+const createConfig = require('./config/createConfig');
+const formatWeebpackMessages = require('react-dev-utils/formatWebpackMessages');
+const webpack = require('webpack');
 async function build() {
   fs.emptyDirSync(paths.appBuild);
-  const clientConfig = createConfig("web", "prod");
-  const serverConfig = createConfig("node", "web");
-  console.log("Production build");
-  console.log("Compiling client....");
+  const clientConfig = createConfig('web', 'prod');
+  const serverConfig = createConfig('node', 'web');
+  console.log('Production build');
+  console.log('Compiling client....');
   try {
     await compile(clientConfig);
   } catch (err) {
     console.error(`Build client error: ${err.message}`.red);
     process.exit(1);
   }
-  console.log("Build client success".green);
-  console.log("Compiling server....");
+  console.log('Build client success'.green);
+  console.log('Compiling server....');
   try {
     await compile(serverConfig);
   } catch (err) {
     console.error(`Build server error: ${err.message}`.red);
     process.exit(1);
   }
-  console.log("Build server success".green);
+  console.log('Build server success'.green);
 }
 function compile(config) {
   let compiler;
   try {
     compiler = webpack(config);
   } catch (e) {
-    console.error("Failed to compile.", e.message);
+    console.error('Failed to compile.', e.message);
     process.exit(1);
   }
   return new Promise((resolve, reject) => {
@@ -48,7 +47,7 @@ function compile(config) {
       } else {
         const messages = formatWeebpackMessages(stats.toJson({}, true));
         if (messages.errors.length) {
-          return reject(new Error(messages.errors.join("\n\n")));
+          return reject(new Error(messages.errors.join('\n\n')));
         } else {
           resolve(stats);
         }

@@ -10,5 +10,5 @@ module.exports = {
   appPath: resolveApp('.'), // 项目根目录
   dotenv: resolveApp('.env'), // .env文件
   appClientEntry: resolveApp('src/client/entry'), // client 的webpack入口
-  appServerEntry: resolveApp('src/server/app'), // server 的webpack入口
-}
+  appServerEntry: resolveApp('src/server/app') // server 的webpack入口
+};
