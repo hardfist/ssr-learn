@@ -6,6 +6,11 @@ const paths = require('./paths');
 
 module.exports = (target, env) =>
   merge(baseConfig(target, env), {
+    node: {
+      __console: false,
+      __dirname: false,
+      __filename: false
+    },
     mode: 'development',
     devtool: 'source-map',
     entry: paths.appServerEntry,

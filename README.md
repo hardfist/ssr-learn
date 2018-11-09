@@ -497,4 +497,45 @@ const serverRender = props => {
 
 export default (__BROWSER__ ? clientRender() : serverRender);
 ```
+### 页面模板支持
 
+对于复杂的页面，直接写在模板字符串里不太现实，通常使用模板引擎来渲染页面，常见的模板引擎包括`pug`,`ejs`,`nunjuck`等。
+我们这里使用`nunjuck`作为模板引擎。
+```html
+<!-- src/server/views/home.njk -->
+<html>
+
+<head>
+  <title>SSR with RR</title>
+  <link rel="stylesheet" href={{manifest['main.css']}}>
+</head>
+
+<body>
+  <div id="root">{{markup|safe}}</div>
+</body>
+<script src={{manifest['main.js']}}></script>
+
+</html>
+```
+```js
+// src/server/server.js
+import koaNunjucks from 'koa-nunjucks-2';
+...
+app.use(
+  koaNunjucks({
+    ext: 'njk',
+    path: path.join(__dirname, 'views')
+  })
+);
+```
+由于koa里使用模板并不是直接`require` `views`里的模板，所以最后打包的文件并不包含`views`模板里的内容，因此我们需要将`views`里的内容拷贝过去。
+另外webpack默认处理`__dirname`的行为是将其mock为`/`,因此服务端渲染的情况下，我们需要阻止其mock行为[__dirname](https://webpack.js.org/configuration/node/#node-__dirname),同理也需要阻止`__console`和`__filename`的mock行为。
+```js
+// webpack.config.server.js
+ merge(baseConfig(target, env), {
+    node: {
+      __console: false,
+      __dirname: false, // 阻止其mock行为
+      __filename: false
+ });
+```

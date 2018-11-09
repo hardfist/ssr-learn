@@ -1,0 +1,13 @@
+<html>
+
+<head>
+  <title>SSR with RR</title>
+  <link rel="stylesheet" href={{manifest['main.css']}}>
+</head>
+
+<body>
+  <div id="root">{{markup|safe}}</div>
+</body>
+<script src={{manifest['main.js']}}></script>
+
+</html>

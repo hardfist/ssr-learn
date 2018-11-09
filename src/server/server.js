@@ -1,27 +1,34 @@
 import Koa from 'koa';
 import React from 'react';
 import serve from 'koa-static';
+import path from 'path';
+import koaNunjucks from 'koa-nunjucks-2';
 import { renderToString } from 'react-dom/server';
 import App from '../client/entry';
 const manifest = require(process.env.appManifest);
 
 const app = new Koa();
+app.use(async (ctx, next) => {
+  try {
+    await next();
+  } catch (err) {
+    console.error('exception:', err);
+    ctx.status = 500;
+  }
+});
 app.use(serve(process.env.appBuild));
+app.use(
+  koaNunjucks({
+    ext: 'njk',
+    path: path.join(__dirname, 'views')
+  })
+);
 app.use(async ctx => {
   const markup = renderToString(<App />);
-  ctx.body = `
-   <html>
-      <head>
-        <title>SSR with RR</title>
-        <link rel="stylesheet" href="${manifest['main.css']}">
-      </head>
-
-      <body>
-        <div id="root">${markup}</div>
-      </body>
-      <script src="${manifest['main.js']}"></script>
-    </html>
-  `;
+  await ctx.render('home', {
+    markup,
+    manifest
+  });
 });
 export async function startServer() {
   app.listen(process.env.PORT || 3000, () => {

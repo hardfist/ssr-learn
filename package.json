@@ -6,7 +6,7 @@
     "dev": "webpack -w & nodemon output/server.js",
     "clean": "rimraf output",
     "start": "node output/server.js",
-    "build": "node ./scripts/webpack/build.js",
+    "build": "node ./scripts/webpack/build.js && cp -r ./src/server/views/ ./output/views/",
     "codesandbox": "codesandbox  ./ ",
     "now": "now"
   },
@@ -16,6 +16,7 @@
   "dependencies": {
     "dotenv": "^6.1.0",
     "koa": "^2.6.1",
+    "koa-nunjucks-2": "^3.0.2",
     "koa-router": "^7.4.0",
     "koa-static": "^5.0.0",
     "react": "^16.6.0",

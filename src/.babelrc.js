@@ -3,7 +3,7 @@ module.exports = {
     [
       "@babel/env",
       {
-        modules: false,
+        modules: 'commonjs',
         targets: {
           node: "current"
         }
