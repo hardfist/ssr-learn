@@ -19,9 +19,12 @@
     "koa-nunjucks-2": "^3.0.2",
     "koa-router": "^7.4.0",
     "koa-static": "^5.0.0",
+    "node-sass": "^4.10.0",
     "react": "^16.6.0",
     "react-dom": "^16.6.0",
-    "react-router-dom": "^4.3.1"
+    "react-router-dom": "^4.3.1",
+    "resolve-url-loader": "^3.0.0",
+    "sass-loader": "^7.1.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.1.2",

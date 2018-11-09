@@ -19,12 +19,25 @@ module.exports = (target, env) => {
       })
     ]
   };
+  const postcss_loader = {
+    loader: 'postcss-loader',
+    options: postCssOptions
+  };
+  const css_loaders = [
+    postcss_loader,
+    {
+      loader: 'resolve-url-loader'
+    },
+    {
+      loader: 'sass-loader',
+      options: {
+        sourceMap: true
+      }
+    }
+  ];
   const load_css = ({ include, exclude }) => {
     let css_loader_config = {};
-    const postcss_loader = {
-      loader: 'postcss-loader',
-      options: postCssOptions
-    };
+
     if (IS_NODE) {
       // servre编译只需要能够解析css，并不需要实际的生成css文件
       css_loader_config = [
@@ -34,7 +47,7 @@ module.exports = (target, env) => {
             importLoaders: 1
           }
         },
-        postcss_loader
+        ...css_loaders
       ];
     } else if (IS_DEV) {
       // client 编译且为development下，使用style-loader以便支持热更新
@@ -46,7 +59,7 @@ module.exports = (target, env) => {
             importLoaders: 1
           }
         },
-        postcss_loader
+        ...css_loaders
       ];
     } else {
       // client编译且为production下，需要将css抽取出单独的css文件,并且需要对css进行压缩
@@ -60,10 +73,7 @@ module.exports = (target, env) => {
             minimize: true // 压缩编译后生成的css文件
           }
         },
-        {
-          loader: require.resolve('postcss-loader'),
-          options: postCssOptions
-        }
+        ...css_loaders
       ];
     }
     return {
@@ -80,7 +90,7 @@ module.exports = (target, env) => {
       module: {
         rules: [
           {
-            test: /\.css$/,
+            test: /\.(css|scss)$/,
             use: css_loader_config,
             exclude,
             include
@@ -92,10 +102,6 @@ module.exports = (target, env) => {
 
   const load_css_module = ({ include, exclude }) => {
     let css_module_config = {};
-    const postcss_loader = {
-      loader: 'postcss-loader',
-      options: postCssOptions
-    };
     if (IS_NODE) {
       // servre编译只需要能够解析css，并不需要实际的生成css文件
       css_module_config = [
@@ -107,7 +113,7 @@ module.exports = (target, env) => {
             localIdentName: '[path]__[name]___[local]'
           }
         },
-        postcss_loader
+        ...css_loaders
       ];
     } else if (IS_DEV) {
       // client 编译且为development下，使用style-loader以便支持热更新
@@ -121,7 +127,7 @@ module.exports = (target, env) => {
             localIdentName: '[path]__[name]___[local]'
           }
         },
-        postcss_loader
+        ...css_loaders
       ];
     } else {
       // client编译且为production下，需要将css抽取出单独的css文件,并且需要对css进行压缩
@@ -136,17 +142,14 @@ module.exports = (target, env) => {
             minimize: true // 压缩编译后生成的css文件
           }
         },
-        {
-          loader: require.resolve('postcss-loader'),
-          options: postCssOptions
-        }
+        ...css_loaders
       ];
     }
     return {
       module: {
         rules: [
           {
-            test: /\.module\.css$/,
+            test: /\.module\.(css|scss)$/,
             use: css_module_config,
             include,
             exclude

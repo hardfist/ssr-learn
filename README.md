@@ -539,3 +539,72 @@ app.use(
       __filename: false
  });
 ```
+### SPA支持
+我们使用`react-router@4`来实现SPA，`react-router`对服务端渲染有着良好的支持。
+`react-router`的核心API包括`Router`,`Route`,`Link`
++ Router: 渲染环境相关，为Route组件提供history对象，`react-router`为不同的环境提供了不同的Router实现，浏览器环境下提供了`BrowserRouter`,服务器环境提供`StaticRouter`,测试环境提供`MemoryRouter`
++ Route: 渲染环境无关，根据Router提供的history对象与path属性匹配，渲染对应组件。
++ Link: 实现单页内跳转，更新history，不刷新页面。
+因此对于服务端渲染，其差异主要在于Router的处理。
+#### 创建routers
+```js
+// src/client/entry/routes.js
+import Detail from '../../container/home/detail';
+import User from '../../container/home/user';
+import Feed from '../../container/home/feed';
+import NotFound from '../../components/not-found';
+export default [
+  {
+    name: 'detail',
+    path: '/news/item/:item_id',
+    component: Detail
+  },
+  {
+    name: 'user',
+    path: '/news/user/:user_id',
+    component: User
+  },
+  {
+    name: 'feed',
+    path: '/news/feed/:page',
+    component: Feed
+  },
+  {
+    name: '404',
+    component: NotFound // 404兜底
+  }
+];
+```
+
+```js
+import React from 'react';
+import { Switch, Route } from 'react-router-dom';
+import RedirectWithStatus from '../../components/redirct-with-status';
+import Routers from './routers';
+export default class Home extends React.Component {
+  render() {
+    return (
+      <div className="news-container">
+        <Switch>
+          <RedirectWithStatus
+            status={301}
+            exact
+            from={'/'}
+            to={'/news/feed/1'}
+          />
+          {Routers.map(({ name, path, component }) => {
+            return <Route key={name} path={path} component={component} />;
+          })}
+        </Switch>
+      </div>
+    );
+  }
+}
+
+```
+#### 404 && Redirect
+服务端对于路由请求一般有三种正常处理情况：
+1. 正常返回页面
+2. 重定向
+3. 404
+对于正常返回页面不需要任何特殊处理，而对于重定向和404服务端通常可能有自己的处理逻辑（日志，埋点监控，后端重定向处理等），因此服务端需要对这两种情况有所感知，不能交由前端完全处理。
