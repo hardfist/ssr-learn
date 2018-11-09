@@ -24,7 +24,8 @@ const baseConfig = (target, env) => {
       include: [paths.appSrc],
       exclude: [paths.appBuild, /\.module\.css$/]
     }),
-    parts.load_js({ exclude: paths.appBuild })
+    parts.load_js({ exclude: paths.appBuild }),
+    parts.alias()
   );
 };
 

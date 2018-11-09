@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import Status from '../status';
+import Status from 'components/status';
 class NotFound extends Component {
   render() {
     return (

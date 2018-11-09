@@ -1,6 +1,6 @@
 import React from 'react';
 import { Switch, Route, Link } from 'react-router-dom';
-import RedirectWithStatus from '../components/redirect-with-status';
+import RedirectWithStatus from 'components/redirect-with-status';
 import Routers from './routers';
 import './index.scss';
 export default class Home extends React.Component {
