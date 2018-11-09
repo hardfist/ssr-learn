@@ -1,6 +1,6 @@
 import React from 'react';
 import { Switch, Route, Link } from 'react-router-dom';
-import RedirectWithStatus from '../../components/redirct-with-status';
+import RedirectWithStatus from '../components/redirect-with-status';
 import Routers from './routers';
 import './index.scss';
 export default class Home extends React.Component {
@@ -10,7 +10,7 @@ export default class Home extends React.Component {
         <div className="nav-container">
           <Link to={'/'}>Home</Link>
           <Link to={'/news/feed/1'}>Feed</Link>
-          <Link to={'/news/detail/1'}>Detail</Link>
+          <Link to={'/news/item/1'}>Detail</Link>
           <Link to={'/news/user/1'}>User</Link>
           <Link to={'/notfound'}>Not Found</Link>
         </div>

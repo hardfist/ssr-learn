@@ -1,7 +1,7 @@
-import Detail from '../../container/home/detail';
-import User from '../../container/home/user';
-import Feed from '../../container/home/feed';
-import NotFound from '../../components/not-found';
+import Detail from '../container/home/detail';
+import User from '../container/home/user';
+import Feed from '../container/home/feed';
+import NotFound from '../components/not-found';
 export default [
   {
     name: 'detail',

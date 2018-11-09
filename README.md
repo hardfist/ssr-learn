@@ -545,8 +545,8 @@ app.use(
 + Router: 渲染环境相关，为Route组件提供history对象，`react-router`为不同的环境提供了不同的Router实现，浏览器环境下提供了`BrowserRouter`,服务器环境提供`StaticRouter`,测试环境提供`MemoryRouter`
 + Route: 渲染环境无关，根据Router提供的history对象与path属性匹配，渲染对应组件。
 + Link: 实现单页内跳转，更新history，不刷新页面。
-因此对于服务端渲染，其差异主要在于Router的处理。
-#### 创建routers
+因此对于服务端渲染，其差异主要在于Router的处理,Route和Link的逻辑可以复用。
+#### 创建routes
 ```js
 // src/client/entry/routes.js
 import Detail from '../../container/home/detail';
@@ -575,36 +575,112 @@ export default [
   }
 ];
 ```
-
+#### 更新app.js
 ```js
 import React from 'react';
-import { Switch, Route } from 'react-router-dom';
+import { Switch, Route, Link } from 'react-router-dom';
 import RedirectWithStatus from '../../components/redirct-with-status';
 import Routers from './routers';
+import './index.scss';
 export default class Home extends React.Component {
   render() {
     return (
       <div className="news-container">
-        <Switch>
-          <RedirectWithStatus
-            status={301}
-            exact
-            from={'/'}
-            to={'/news/feed/1'}
-          />
-          {Routers.map(({ name, path, component }) => {
-            return <Route key={name} path={path} component={component} />;
-          })}
-        </Switch>
+        <div className="nav-container">
+          <Link to={'/'}>Home</Link>
+          <Link to={'/news/feed/1'}>Feed</Link>
+          <Link to={'/news/item/1'}>Detail</Link>
+          <Link to={'/news/user/1'}>User</Link>
+          <Link to={'/notfound'}>Not Found</Link>
+        </div>
+        <div className="stage-container">
+          <Switch>
+            <RedirectWithStatus
+              status={301}
+              exact
+              from={'/'}
+              to={'/news/feed/1'}
+            />
+            {Routers.map(({ name, path, component }) => {
+              return <Route key={name} path={path} component={component} />;
+            })}
+          </Switch>
+        </div>
       </div>
     );
   }
 }
-
 ```
-#### 404 && Redirect
+#### 创建Router
+我们在服务端使用`StaticRouter`而在客户端使用`BrowserRouter`。StaticRouter接受两个参数，根据location选择匹配组件进行渲染，
+传入context信息用户服务端渲染是向服务端传递额外的信息,由于路由逻辑被客户端端接管，但有些路由相关业务仍然需要服务端处理，如服务端重定向，服务端日志、埋点统计等，因此我们通过context向服务端下发路由相关信息。
+```js
+// src/client/entry/index.js
+import App from './app';
+import { BrowserRouter, StaticRouter } from 'react-router-dom';
+import routes from './routers';
+import ReactDOM from 'react-dom';
+import React from 'react';
+
+const clientRender = () => {
+  return ReactDOM.hydrate(
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>,
+    document.getElementById('root')
+  );
+};
+
+const serverRender = props => {
+  return (
+    <StaticRouter location={props.url} context={props.context}>
+      <App />
+    </StaticRouter>
+  );
+};
+
+export default (__BROWSER__ ? clientRender() : serverRender);
+```
+#### 配置server
+服务端需向App传入当前url和context，然后根据context获取的信息可以执行服务端自定义的业务逻辑。
 服务端对于路由请求一般有三种正常处理情况：
 1. 正常返回页面
 2. 重定向
 3. 404
 对于正常返回页面不需要任何特殊处理，而对于重定向和404服务端通常可能有自己的处理逻辑（日志，埋点监控，后端重定向处理等），因此服务端需要对这两种情况有所感知，不能交由前端完全处理。
+```js
+app.use(async ctx => {
+  const context = {};
+  const markup = renderToString(<App url={ctx.url} context={context} />);
+  if (context.url) {
+    ctx.status = context.status;
+    ctx.redirect(context.url); // 服务端重定向
+    return;
+  }
+  if(context.status){
+    if(context.status === '404'){
+      console.warn('page not found'); //服务端自定义404处理逻辑
+      // ctx.redirect('/404'); 客户端已经做了404的容错，如果服务端想渲染服务端生成的的404页面，可以在此执行，否则可以直接复用客户端的404容错。
+    }
+  }
+  await ctx.render('home', {
+    markup,
+    manifest
+  });
+});
+```
+服务端的`context.status`和`context.url`这些信息的下发逻辑都在组件内实现，以`RedirectWithStatus`组件为例
+```js
+// src/client/components/redirect-with-status
+const RedirectWithStatus = ({ from, to, status, exact }) => (
+  <Route
+    render={({ staticContext }) => {
+      // 客户端没有staticContext,所以需要判断，
+      if (staticContext) {
+        staticContext.status = status; // 下发信息给服务端
+      }
+      return <Redirect from={from} to={to} exact={exact} />;
+    }}
+  />
+);
+```

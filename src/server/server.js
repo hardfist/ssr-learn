@@ -27,6 +27,7 @@ app.use(async ctx => {
   const context = {};
   const markup = renderToString(<App url={ctx.url} context={context} />);
   if (context.url) {
+    ctx.status = context.status;
     ctx.redirect(context.url);
     return;
   }
