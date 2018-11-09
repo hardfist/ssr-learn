@@ -19,8 +19,13 @@
     "no-console": "off",
     "strict": ["error", "global"],
     "curly": "warn",
+    "no-undef": "error",
     "react/jsx-uses-react": "error",
-    "react/jsx-uses-vars": "error"
+    "react/jsx-uses-vars": "error",
+    "react/jsx-no-undef": "error",
+    "react/react-in-jsx-scope": "error"
+
+
   },
   "globals": {
     "__BROWSER__":true,

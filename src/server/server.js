@@ -24,7 +24,12 @@ app.use(
   })
 );
 app.use(async ctx => {
-  const markup = renderToString(<App />);
+  const context = {};
+  const markup = renderToString(<App url={ctx.url} context={context} />);
+  if (context.url) {
+    ctx.redirect(context.url);
+    return;
+  }
   await ctx.render('home', {
     markup,
     manifest

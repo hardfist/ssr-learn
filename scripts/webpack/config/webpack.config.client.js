@@ -9,6 +9,8 @@ module.exports = (target, env) =>
       main: paths.appClientEntry
     },
     target: 'web',
+    mode: 'development',
+    devtool: 'source-map',
     output: {
       filename: '[name].[chunkhash:8].js'
     },
