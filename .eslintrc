@@ -16,7 +16,7 @@
     }
   },
   "rules": {
-    "no-console": "off",
+    "no-console": "error",
     "strict": ["error", "global"],
     "curly": "warn",
     "no-undef": "error",

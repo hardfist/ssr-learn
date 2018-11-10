@@ -6,7 +6,7 @@
     "dev": "webpack -w & nodemon output/server.js",
     "clean": "rimraf output",
     "start": "node output/server.js",
-    "build": "node ./scripts/webpack/build.js && cp -r ./src/server/views/ ./output/views/",
+    "build": "node ./scripts/webpack/build.js",
     "codesandbox": "codesandbox  ./ ",
     "now": "now"
   },
@@ -14,6 +14,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "copy-webpack-plugin": "^4.6.0",
     "dotenv": "^6.1.0",
     "koa": "^2.6.1",
     "koa-nunjucks-2": "^3.0.2",
