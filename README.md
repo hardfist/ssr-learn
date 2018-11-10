@@ -1,7 +1,5 @@
 # REACT 服务端渲染最全教程
 
-[TOC]
-
 本系列将从零到一讲述如何搭建一个支持多页面+ 单页面 + Code Split + SSR + i18n + Redux 的 HackerNews。重点讲述构建复杂 SSR 系统碰到的各种问题。所有中间过程都可以在 codesandbox 上查看。
 首先编写一个最基础的 SSR 渲染页面,我们服务端使用 Koa ，前端使用 React。
 
@@ -9,7 +7,7 @@
 
 ```jsx
 // src/client/app.js
-import React from "react";
+import React from 'react';
 export default class App extends React.Component {
   render() {
     return <div>welcome to ssr world</div>;
@@ -21,10 +19,10 @@ export default class App extends React.Component {
 
 ```jsx
 // src/server/server.js
-import Koa from "koa";
-import React from "react";
-import { renderToString } from "react-dom/server";
-import App from "../client/app";
+import Koa from 'koa';
+import React from 'react';
+import { renderToString } from 'react-dom/server';
+import App from '../client/app';
 
 const app = new Koa();
 app.use(async ctx => {
@@ -43,12 +41,12 @@ app.use(async ctx => {
 });
 export async function startServer() {
   app.listen(process.env.PORT, () => {
-    console.log("start server at port:", process.env.PORT);
+    console.log('start server at port:', process.env.PORT);
   });
 }
 
 // src/server/app.js
-import { startServer } from "./server";
+import { startServer } from './server';
 startServer();
 ```
 
@@ -78,20 +76,20 @@ startServer();
 我们使用 webpack 编译服务端代码，webpack 配置和一般前端代码的配置无太大区别
 
 ```js
-const path = require("path");
-const nodeExternals = require("webpack-node-externals");
+const path = require('path');
+const nodeExternals = require('webpack-node-externals');
 const serverConfig = {
-  entry: "./src/server/app.js", // entry指向 server的入口
-  mode: "development",
-  target: "node", // 使用类node环境（使用node.js的require来加载chunk)
+  entry: './src/server/app.js', // entry指向 server的入口
+  mode: 'development',
+  target: 'node', // 使用类node环境（使用node.js的require来加载chunk)
   externals: [nodeExternals()], // webpack打包不打包node_modules里的模块
   output: {
-    path: path.join(__dirname, "output"),
-    filename: "server.js",
-    publicPath: "/"
+    path: path.join(__dirname, 'output'),
+    filename: 'server.js',
+    publicPath: '/'
   },
   module: {
-    rules: [{ test: /\.(js)$/, use: "babel-loader" }]
+    rules: [{ test: /\.(js)$/, use: 'babel-loader' }]
   }
 };
 
@@ -105,7 +103,7 @@ module.exports = [serverConfig];
    - 减小编译文件内容加快编译速度。
    - 防止重复执行同一 node_module 下模块， 假如该模块存在副作用则可能会造成错误，一个常见的场景是 client 和 server 会公用一些模块例如 react-loadable，由于 node 的 require 缓存是基于路径的，如果对 client 进行了编译但没对 server 进行编译，这回导致 client 引用了 react-loadble 和 server 引用了 react-loadable,但是 client 对 react-loadable 进行了打包，导致 react-loadable 二次加载，然而 react-loadable 的加载具有副作用，导致 react-loadable 的部分功能失效。
 
-我们同样需要进行 babel 配置，因为使用了react， 所以需要对babel进行配置
+我们同样需要进行 babel 配置，因为使用了 react， 所以需要对 babel 进行配置
 
 ```js
 module.exports = {
@@ -135,18 +133,18 @@ module.exports = {
 
 ```jsx
 // scripts/webpack/config/webpack.config.base.js
-const path = require("path");
-const webpack = require("webpack");
+const path = require('path');
+const webpack = require('webpack');
 const baseConfig = {
   context: process.cwd(),
-  mode: "production",
+  mode: 'production',
   output: {
-    path: path.join(root, "output"),
-    filename: "server.js",
-    publicPath: "/"
+    path: path.join(root, 'output'),
+    filename: 'server.js',
+    publicPath: '/'
   },
   module: {
-    rules: [{ test: /\.(js)$/, use: "babel-loader" }]
+    rules: [{ test: /\.(js)$/, use: 'babel-loader' }]
   }
 };
 
@@ -156,13 +154,13 @@ module.exports = baseConfig;
 ```jsx
 // scripts/webpack/config/webpack.config.server.js
 module.exports = merge(baseConfig, {
-  mode: "development",
-  devtool: "source-map",
-  entry: "./src/server/app.js",
-  target: "node",
+  mode: 'development',
+  devtool: 'source-map',
+  entry: './src/server/app.js',
+  target: 'node',
   output: {
-    filename: "server.js",
-    libraryTarget: "commonjs2"
+    filename: 'server.js',
+    libraryTarget: 'commonjs2'
   },
   externals: [nodeExternals()]
 });
@@ -172,11 +170,11 @@ module.exports = merge(baseConfig, {
 // scripts/webpack/config/webpack.config.client.js
 module.exports = merge(baseConfig, {
   entry: {
-    main: "./src/client/index.js"
+    main: './src/client/index.js'
   },
-  target: "web",
+  target: 'web',
   output: {
-    filename: "[name].[chunkhash:8].js" // 设置hash用于缓存更新
+    filename: '[name].[chunkhash:8].js' // 设置hash用于缓存更新
   },
   plugins: [
     new manifestPlugin() // server端用于获取生成的前端文件名
@@ -204,21 +202,21 @@ server 端需要获取每次编译后生成的版本信息，以用于下发正�
 
 ### 变量注入
 
- 有些场景我们需要在代码中注入一些变量，例如
+有些场景我们需要在代码中注入一些变量，例如
 
 - 一份代码需要运行在不同的环境，如 development，staging，production 环境，需要在代码中根据不同的环境处理不同的逻辑
 - 很多 node_moudles 会根据不同的 process.env.NODE_ENV 读取不同的代码，如 react 在 process.node.NODE_ENV === 'production'下会读取的是压缩后的代码，这样能保证线上的代码体积打包更小。
-- 不同的用户会下发不同的  参数，如在 AB 测情况下，server 会给不同用户下发  不同的参数，代码中根据不同的  参数，呈现不同的结果。
+- 不同的用户会下发不同的 参数，如在 AB 测情况下，server 会给不同用户下发 不同的参数，代码中根据不同的 参数，呈现不同的结果。
   变量注入可以分为运行时注入和编译时注入
 
-####  运行时注入
+#### 运行时注入
 
 前端的运行是可以通过读取 server 端下发的 window.xxx 变量实现，比较简单，
-服务端变量注入通常有两种方式配置文件  和配置环境变量。
+服务端变量注入通常有两种方式配置文件 和配置环境变量。
 
 ##### 配置文件
 
-我们可以为不同环境配置不同的  配置文件,如 eggjs 的多环境配置就是通过不同的  配置文件实现的根据 EGG_SERVER_ENV 读取不同的配置文件，其 config 如下所示,
+我们可以为不同环境配置不同的 配置文件,如 eggjs 的多环境配置就是通过不同的 配置文件实现的根据 EGG_SERVER_ENV 读取不同的配置文件，其 config 如下所示,
 
 ```sh
 config
@@ -274,14 +272,14 @@ config
 
 ```js
 // scripts/webpack/config/paths.js
-const path = require("path");
-const fs = require("fs");
+const path = require('path');
+const fs = require('fs');
 const appDirectory = fs.realpathSync(process.cwd());
 const resolveApp = relativePath => path.resolve(appDirectory, relativePath);
 
 module.exports = {
-  appManifest: resolveApp("output/manifest.json"),
-  appBuild: resolveApp("output")
+  appManifest: resolveApp('output/manifest.json'),
+  appBuild: resolveApp('output')
 };
 ```
 
@@ -295,19 +293,19 @@ module.exports = {
 为了方便项目的扩展，我们将原来在项目中硬编码的一些常量配置进行统一处理，大部分和路径相关的配置收敛到`scripts/webpack/config/paths`目录下。
 
 ```js
-const path = require("path");
-const fs = require("fs");
+const path = require('path');
+const fs = require('fs');
 const appDirectory = fs.realpathSync(process.cwd());
 const resolveApp = relativePath => path.resolve(appDirectory, relativePath);
 
 module.exports = {
-  appManifest: resolveApp("output/manifest.json"), // client编译manifest
-  appBuild: resolveApp("output"), //client && server编译生成目录
-  appSrc: resolveApp("src"), // cliet && server source dir
-  appPath: resolveApp("."), // 项目根目录
-  dotenv: resolveApp(".env"), // .env文件
-  appClientEntry: resolveApp("src/client/entry"), // client 的webpack入口
-  appServerEntry: resolveApp("src/server/app") // server 的webpack入口
+  appManifest: resolveApp('output/manifest.json'), // client编译manifest
+  appBuild: resolveApp('output'), //client && server编译生成目录
+  appSrc: resolveApp('src'), // cliet && server source dir
+  appPath: resolveApp('.'), // 项目根目录
+  dotenv: resolveApp('.env'), // .env文件
+  appClientEntry: resolveApp('src/client/entry'), // client 的webpack入口
+  appServerEntry: resolveApp('src/server/app') // server 的webpack入口
 };
 ```
 
@@ -322,7 +320,7 @@ exports.loadJS = ({ include, exclude }) => ({
     rules: [
       {
         test: /\.(js|jsx|mjs)$/,
-        use: "babel-loader",
+        use: 'babel-loader',
         include,
         exclude
       }
@@ -346,26 +344,26 @@ const commonConfig = merge([...parts.loadJS({ include: paths.appSrc })]);
 ```js
 // webpack.config.parts.js
 const postCssOptions = {
-  ident: "postcss",
+  ident: 'postcss',
   plugins: () => [
-    require("postcss-flexbugs-fixes"),
+    require('postcss-flexbugs-fixes'),
     autoprefixer({
-      browsers: [">1%", "last 4 versions", "Firefox ESR", "not ie < 9"],
-      flexbox: "no-2009"
+      browsers: ['>1%', 'last 4 versions', 'Firefox ESR', 'not ie < 9'],
+      flexbox: 'no-2009'
     })
   ]
 };
 const loadCSS = ({ include, exclude }) => {
   let css_loader_config = {};
   const postcss_loader = {
-    loader: "postcss-loader",
+    loader: 'postcss-loader',
     options: postCssOptions
   };
   if (IS_NODE) {
     // servre编译只需要能够解析css，并不需要实际的生成css文件
     css_loader_config = [
       {
-        loader: "css-loader",
+        loader: 'css-loader',
         options: {
           importLoaders: 1
         }
@@ -375,9 +373,9 @@ const loadCSS = ({ include, exclude }) => {
   } else if (IS_DEV) {
     // client 编译且为development下，使用style-loader以便支持热更新
     css_loader_config = [
-      "style-loader",
+      'style-loader',
       {
-        loader: "css-loader",
+        loader: 'css-loader',
         options: {
           importLoaders: 1
         }
@@ -389,7 +387,7 @@ const loadCSS = ({ include, exclude }) => {
     css_loader_config = [
       MiniCssExtractPlugin.loader,
       {
-        loader: require.resolve("css-loader"),
+        loader: require.resolve('css-loader'),
         options: {
           importLoaders: 1,
           modules: false, // 不支持css module
@@ -397,7 +395,7 @@ const loadCSS = ({ include, exclude }) => {
         }
       },
       {
-        loader: require.resolve("postcss-loader"),
+        loader: require.resolve('postcss-loader'),
         options: postCssOptions
       }
     ];
@@ -408,8 +406,8 @@ const loadCSS = ({ include, exclude }) => {
       !IS_NODE &&
         IS_PROD &&
         new MiniCssExtractPlugin({
-          filename: "static/css/[name].[contenthash:8].css",
-          chunkFilename: "static/css/[name].[contenthash:8].chunk.css",
+          filename: 'static/css/[name].[contenthash:8].css',
+          chunkFilename: 'static/css/[name].[contenthash:8].chunk.css',
           allChunks: true // 不对css进行code spliting，包含所有的css, 对css的code splitting 暂时还有些问题
         })
     ].filter(x => x),
@@ -424,35 +422,38 @@ const loadCSS = ({ include, exclude }) => {
   };
 };
 ```
-css module的支持和上面类似，prod 模式下，我们还需要在 html 里引入 css，使用 manifest 即可轻松实现。
+
+css module 的支持和上面类似，prod 模式下，我们还需要在 html 里引入 css，使用 manifest 即可轻松实现。
 
 ```js
 ctx.body = `
    <html>
       <head>
         <title>SSR with RR</title>
-        <link rel="stylesheet" href="${manifest["main.css"]}"> # 添加对css的支持
+        <link rel="stylesheet" href="${manifest['main.css']}"> # 添加对css的支持
       </head>
 
       <body>
         <div id="root">${markup}</div>
       </body>
-      <script src="${manifest["main.js"]}"></script>
+      <script src="${manifest['main.js']}"></script>
     </html>
   `;
 ```
 
 ### Code Fence
-有时我们需要控制代码只在客户端或者服务端执行，如果在server里直接使用了`window`或者`document`这种仅在浏览器可访问的对象，则会在server端报错，反之在client里直接发使用了`fs`这样的对象也会报错。
+
+有时我们需要控制代码只在客户端或者服务端执行，如果在 server 里直接使用了`window`或者`document`这种仅在浏览器可访问的对象，则会在 server 端报错，反之在 client 里直接发使用了`fs`这样的对象也会报错。
 
 对于共享于服务器和客户端，但用于不同平台 API 的任务，建议将平台特定实现包含在通用 API 中，或者使用为你执行此操作的 library。例如，axios 是一个 HTTP 客户端，可以向服务器和客户端都暴露相同的 API。
 
 对于仅浏览器可用的 API，通常方式是，1.在「纯客户端」的生命周期钩子函数中惰性访问它们（如`react`的`componentDidMount`)。
 
-请注意，考虑到如果第三方 library 不是以上面的通用用法编写，则将其集成到服务器渲染的应用程序中，可能会很棘手。你可能要通过模拟(mock)一些全局变量来使其正常运行（如可以通过 jsdom 来 mock 浏览器的 dom 对象，进行 html 解析），但这只是 hack 的做法，并且可能会干扰到其他 library 的环境检测代码(很多的第三方库判断执行环境的代码很粗暴，通常只是判断`typeof document === 'undefined'`，这是如果你mock了`document`对象，会导致第三方库的判断代码出错)。
+请注意，考虑到如果第三方 library 不是以上面的通用用法编写，则将其集成到服务器渲染的应用程序中，可能会很棘手。你可能要通过模拟(mock)一些全局变量来使其正常运行（如可以通过 jsdom 来 mock 浏览器的 dom 对象，进行 html 解析），但这只是 hack 的做法，并且可能会干扰到其他 library 的环境检测代码(很多的第三方库判断执行环境的代码很粗暴，通常只是判断`typeof document === 'undefined'`，这是如果你 mock 了`document`对象，会导致第三方库的判断代码出错)。
 
 因此相比于运行时判断执行环境，我们更倾向于在编译时判断执行环境。我们使用一种称为[Code Fence](https://fusionjs.com/docs/getting-started/core-concepts/#code-fence)的技术来实现在编译时区分执行环境。
-其实现方式很简单，通过webpack的[definePlugin](https://webpack.docschina.org/plugins/define-plugin/)为client和server定义两个不同的全局常量。
+其实现方式很简单，通过 webpack 的[definePlugin](https://webpack.docschina.org/plugins/define-plugin/)为 client 和 server 定义两个不同的全局常量。
+
 ```js
 // webpack.config.client.js
 {
@@ -478,17 +479,19 @@ ctx.body = `
   ...
 }
 ```
-本例中我们就可以使用`Code Fence`来统一client和server引入app的入口了。由于client和server渲染执行的逻辑不一致，
-client执行hydrate操作，而server端执行renderToString操作，导致两者导入app的入口无法保持一致。我们可以通过`Code Fence`在
-同一个文件里为client和server导出不同的内容。
+
+本例中我们就可以使用`Code Fence`来统一 client 和 server 引入 app 的入口了。由于 client 和 server 渲染执行的逻辑不一致，
+client 执行 hydrate 操作，而 server 端执行 renderToString 操作，导致两者导入 app 的入口无法保持一致。我们可以通过`Code Fence`在
+同一个文件里为 client 和 server 导出不同的内容。
+
 ```js
 // src/client/entry/index.js
-import App from "./app";
-import ReactDOM from "react-dom";
-import React from "react";
+import App from './app';
+import ReactDOM from 'react-dom';
+import React from 'react';
 
 const clientRender = () => {
-  return ReactDOM.hydrate(<App />, document.getElementById("root"));
+  return ReactDOM.hydrate(<App />, document.getElementById('root'));
 };
 
 const serverRender = props => {
@@ -497,10 +500,12 @@ const serverRender = props => {
 
 export default (__BROWSER__ ? clientRender() : serverRender);
 ```
+
 ### 页面模板支持
 
 对于复杂的页面，直接写在模板字符串里不太现实，通常使用模板引擎来渲染页面，常见的模板引擎包括`pug`,`ejs`,`nunjuck`等。
 我们这里使用`nunjuck`作为模板引擎。
+
 ```html
 <!-- src/server/views/home.njk -->
 <html>
@@ -517,6 +522,7 @@ export default (__BROWSER__ ? clientRender() : serverRender);
 
 </html>
 ```
+
 ```js
 // src/server/server.js
 import koaNunjucks from 'koa-nunjucks-2';
@@ -528,8 +534,10 @@ app.use(
   })
 );
 ```
-由于koa里使用模板并不是直接`require` `views`里的模板，所以最后打包的文件并不包含`views`模板里的内容，因此我们需要将`views`里的内容拷贝过去。
-另外webpack默认处理`__dirname`的行为是将其mock为`/`,因此服务端渲染的情况下，我们需要阻止其mock行为[__dirname](https://webpack.js.org/configuration/node/#node-__dirname),同理也需要阻止`__console`和`__filename`的mock行为。
+
+由于 koa 里使用模板并不是直接`require` `views`里的模板，所以最后打包的文件并不包含`views`模板里的内容，因此我们需要将`views`里的内容拷贝过去。
+另外 webpack 默认处理`__dirname`的行为是将其 mock 为`/`,因此服务端渲染的情况下，我们需要阻止其 mock 行为[\_\_dirname](https://webpack.js.org/configuration/node/#node-__dirname),同理也需要阻止`__console`和`__filename`的 mock 行为。
+
 ```js
 // webpack.config.server.js
  merge(baseConfig(target, env), {
@@ -539,14 +547,19 @@ app.use(
       __filename: false
  });
 ```
-### SPA支持
-我们使用`react-router@4`来实现SPA，`react-router`对服务端渲染有着良好的支持。
-`react-router`的核心API包括`Router`,`Route`,`Link`
-+ Router: 渲染环境相关，为Route组件提供history对象，`react-router`为不同的环境提供了不同的Router实现，浏览器环境下提供了`BrowserRouter`,服务器环境提供`StaticRouter`,测试环境提供`MemoryRouter`
-+ Route: 渲染环境无关，根据Router提供的history对象与path属性匹配，渲染对应组件。
-+ Link: 实现单页内跳转，更新history，不刷新页面。
-因此对于服务端渲染，其差异主要在于Router的处理,Route和Link的逻辑可以复用。
-#### 创建routes
+
+### SPA 支持
+
+我们使用`react-router@4`来实现 SPA，`react-router`对服务端渲染有着良好的支持。
+`react-router`的核心 API 包括`Router`,`Route`,`Link`
+
+- Router: 渲染环境相关，为 Route 组件提供 history 对象，`react-router`为不同的环境提供了不同的 Router 实现，浏览器环境下提供了`BrowserRouter`,服务器环境提供`StaticRouter`,测试环境提供`MemoryRouter`
+- Route: 渲染环境无关，根据 Router 提供的 history 对象与 path 属性匹配，渲染对应组件。
+- Link: 实现单页内跳转，更新 history，不刷新页面。
+  因此对于服务端渲染，其差异主要在于 Router 的处理,Route 和 Link 的逻辑可以复用。
+
+#### 创建 routes
+
 ```js
 // src/client/entry/routes.js
 import Detail from '../../container/home/detail';
@@ -575,7 +588,9 @@ export default [
   }
 ];
 ```
-#### 更新app.js
+
+#### 更新 app.js
+
 ```js
 import React from 'react';
 import { Switch, Route, Link } from 'react-router-dom';
@@ -611,9 +626,12 @@ export default class Home extends React.Component {
   }
 }
 ```
-#### 创建Router
-我们在服务端使用`StaticRouter`而在客户端使用`BrowserRouter`。StaticRouter接受两个参数，根据location选择匹配组件进行渲染，
-传入context信息用户服务端渲染是向服务端传递额外的信息,由于路由逻辑被客户端端接管，但有些路由相关业务仍然需要服务端处理，如服务端重定向，服务端日志、埋点统计等，因此我们通过context向服务端下发路由相关信息。
+
+#### 创建 Router
+
+我们在服务端使用`StaticRouter`而在客户端使用`BrowserRouter`。StaticRouter 接受两个参数，根据 location 选择匹配组件进行渲染，
+传入 context 信息用户服务端渲染是向服务端传递额外的信息,由于路由逻辑被客户端端接管，但有些路由相关业务仍然需要服务端处理，如服务端重定向，服务端日志、埋点统计等，因此我们通过 context 向服务端下发路由相关信息。
+
 ```js
 // src/client/entry/index.js
 import App from './app';
@@ -641,13 +659,17 @@ const serverRender = props => {
 
 export default (__BROWSER__ ? clientRender() : serverRender);
 ```
-#### 配置server
-服务端需向App传入当前url和context，然后根据context获取的信息可以执行服务端自定义的业务逻辑。
+
+#### 配置 server
+
+服务端需向 App 传入当前 url 和 context，然后根据 context 获取的信息可以执行服务端自定义的业务逻辑。
 服务端对于路由请求一般有三种正常处理情况：
+
 1. 正常返回页面
 2. 重定向
 3. 404
-对于正常返回页面不需要任何特殊处理，而对于重定向和404服务端通常可能有自己的处理逻辑（日志，埋点监控，后端重定向处理等），因此服务端需要对这两种情况有所感知，不能交由前端完全处理。
+   对于正常返回页面不需要任何特殊处理，而对于重定向和 404 服务端通常可能有自己的处理逻辑（日志，埋点监控，后端重定向处理等），因此服务端需要对这两种情况有所感知，不能交由前端完全处理。
+
 ```js
 app.use(async ctx => {
   const context = {};
@@ -657,8 +679,8 @@ app.use(async ctx => {
     ctx.redirect(context.url); // 服务端重定向
     return;
   }
-  if(context.status){
-    if(context.status === '404'){
+  if (context.status) {
+    if (context.status === '404') {
       console.warn('page not found'); //服务端自定义404处理逻辑
       // ctx.redirect('/404'); 客户端已经做了404的容错，如果服务端想渲染服务端生成的的404页面，可以在此执行，否则可以直接复用客户端的404容错。
     }
@@ -669,7 +691,9 @@ app.use(async ctx => {
   });
 });
 ```
+
 服务端的`context.status`和`context.url`这些信息的下发逻辑都在组件内实现，以`RedirectWithStatus`组件为例
+
 ```js
 // src/client/components/redirect-with-status
 const RedirectWithStatus = ({ from, to, status, exact }) => (
