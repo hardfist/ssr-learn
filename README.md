@@ -763,7 +763,7 @@ export function createStore(initialState) {
 /// src/client/entry/models/news.js
 
 // 假定我们有一个可以返回 Promise 的 通用 API（请忽略此 API 具体实现细节）
-import { getItem, getTopStories, getUser } from 'service/news';
+import { getItem, getTopStories, getUser } from 'shared/service/news';
 
 export const news = {
   state: {
@@ -807,8 +807,11 @@ export const news = {
   })
 };
 ```
-#### 注入store
-创建完store后，我们就可以在应用中使用store了。
+
+#### 注入 store
+
+创建完 store 后，我们就可以在应用中使用 store 了。
+
 ```js
 // src/client/entry/index.js
 
@@ -835,4 +838,327 @@ const serverRender = props => {
     </Provider>
   );
 };
+```
+
+### 数据预取
+
+对于服务端数据预取，问题关键是如何根据当前的 url 获取到匹配的页面组件，进而获取该页面所需的首屏数据。
+因为首屏数据和页面存在一一对应的关系，因此我们可以考虑将首屏数据挂载到页面组件上。这是`next.js`等框架的做法，如下所示
+
+```jsx
+class Page extends React.Component {
+  static async getInitialProps(url) {
+    const result = await fetchData(url);
+    return result;
+  }
+}
+```
+
+这个做法的缺陷是如果我们想对页面组件使用 HOC 进行封装，需要将静态方法透传到包裹组件上，这有时在一定程度上难以实现，典型的如`react-loadable`,无法将组件透传到`Loadable`组件上。
+
+```jsx
+{
+    name: "detail",
+    path: "/news/item/:item_id",
+    component: Loadable({ // 因为是异步加载故这里难以将detail的静态方法透传到Loadable上。
+      loader: () => import(/* webpackPrefetch: true */ "container/news/detail"),
+      delay: 500,
+      loading: Loading
+    }),
+    async asyncData({ dispatch }: Store, { params }: any) {
+      await dispatch.news.loadDetail(params.item_id);
+    }
+  },
+```
+
+因此我们考虑将数据预取的逻辑存放在`routes`里,添加了数据预取后的`routes`如下所示。
+
+```jsx
+import Detail from 'containers/home/detail';
+import User from 'containers/home/user';
+import Feed from 'containers/home/feed';
+import NotFound from 'components/not-found';
+export default [
+  {
+    name: 'detail',
+    path: '/news/item/:item_id',
+    component: Detail,
+    async asyncData({ dispatch }, { params }) {
+      await dispatch.news.loadDetail(params.item_id);
+    }
+  },
+  {
+    name: 'user',
+    path: '/news/user/:user_id',
+    component: User,
+    async asyncData(store, { params }) {
+      await store.dispatch.news.loadUser(params.user_id);
+    }
+  },
+  {
+    name: 'feed',
+    path: '/news/feed/:page',
+    component: Feed,
+    async asyncData(store, { params }) {
+      await store.dispatch.news.loadList(params.page);
+    }
+  },
+  {
+    name: '404',
+    component: NotFound
+  }
+];
+```
+
+#### 服务端数据预取
+
+我们这里将实际的获取数据的逻辑封装在 redux 的 effects 里，这样方便服务端和客户端统一调用。
+在`routes`里定义了数据预取逻辑后，我们接下来就可以在服务端进行数据预取操作了。
+我们使用`react-router`的`matchPath`来根据当前路由匹配对应页面组件，进而做数据预取操作。代码如下：
+
+```js
+// src/server/server.js
+app.use(async ctx => {
+  const store = createStore();
+  const context = {};
+  const promises = [];
+  routes.some(route => {
+    const match = matchPath(ctx.url, route); // 判断当前页面是否与路由匹配
+    if (match) {
+      route.asyncData && promises.push(route.asyncData(store, match));
+    }
+  });
+  await Promise.all(promises); // 等待服务端获取异步数据，并effect派发完毕
+  const markup = renderToString(
+    <App url={ctx.url} context={context} store={store} />
+  );
+  if (context.url) {
+    ctx.status = context.status;
+    ctx.redirect(context.url);
+    return;
+  }
+  await ctx.render('home', {
+    markup,
+    initial_state: store.getState(), // 将服务端预取数据后的状态同步到客户端作为客户端的初始状态
+    manifest
+  });
+});
+```
+
+### 客户端注水
+
+实现了服务端预取之后，我们需要将服务端获取的状态同步到客户端，以保证客户端渲染的结果和服务端保持一致。
+客户端注水共分为三步
+
+#### 获取服务端完成数据预取后的 initial_state
+
+在`newsController`中可以获取服务端的 initial_state
+
+```tsx
+await ctx.render('home', {
+  markup,
+  initial_state: store.getState() // 将服务端预取数据后的状态同步到客户端作为客户端的初始状态
+});
+```
+
+#### 将 initial_state 同步到模板上
+
+我们可以使用`renderState`将服务端获取的 initial_state 同步到模板上。
+
+```html
+<html>
+
+<head>
+  <title>SSR with RR</title>
+  <link rel="stylesheet" href={{manifest['main.css']}}>
+</head>
+
+<body>
+  <div id="root">{{markup|safe}}</div>
+</body>
+<script>window.__INITIAL_STATE__ = {{serialize(initial_state)|safe}}</script>  <!-- 同步intial_state到模板 -->
+<script src={{manifest['main.js']}}></script>
+</html>
+```
+
+将 intial_state 注入到模板时需要做 xss 防御，这里我们使用[serialize-javascript](https://github.com/yahoo/serialize-javascript)对注入的内容进行过滤。我们为 nunjuck 配置 serialize。
+
+```js
+// src/server/server.js
+app.use(
+  koaNunjucks({
+    ext: 'njk',
+    path: path.join(__dirname, 'views'),
+    configureEnvironment: env => {
+      env.addGlobal('serialize', obj => serialize(obj, { isJSON: true })); // 配置serialize便于模板里使用
+    }
+  })
+);
+```
+
+#### 客户端根据模板上的 initial_state 初始化 store
+
+configure 支持传入 intial_state 来初始化 store
+
+```tsx
+const clientRender = () => {
+  const store = configureStore(window.__INITIAL_STATE__); // 根据window.__INITIAL_STATE__初始化store
+  Loadable.preloadReady().then(() => {
+    ReactDOM.hydrate(
+      <Provider store={store}>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </Provider>,
+      document.getElementById('root')
+    );
+  });
+};
+```
+
+### 客户端数据预取
+
+受限于`react-router`并没有像`vue-router`提供类似`beforeRouteUpdate`的 api，我们只有在其他地方进行客户端预取操作，考虑如下的 hooks
+
+1. `componentDidMount`: 需要区分是首次渲染还是路由跳转
+2. `componentWillReceiveProps`: react-router 切换路由是会进行 mount/unmount 操作，路由组件切换时，页面组件不会触发`componentWillReceiveProps`
+3. `history.listen`: 路由切换时触发
+
+综上我们考虑在应用入口处通过 history.listen 里进行客户端数据预取操作。
+
+```jsx
+import  React from 'react';
+import { Switch, Route } from 'react-router-dom';
+import { withRouter, matchPath } from 'react-router';
+import { connect } from 'react-redux';
+import Routers from './routes';
+import './index.scss';
+class App extends React.Component {
+  componentDidMount() {
+    const { history } = this.props; // 客户端的数据预取操作
+    this.unlisten = history.listen(async (location: any) => {
+      for (const route of Routers) {
+        const match = matchPath(location.pathname, route);
+        if (match) {
+          await route.asyncData({ dispatch: this.props.dispatch }, match);
+        }
+      }
+    });
+  }
+  componentWillUnmount() {
+    this.unlisten(); // 卸载时取消listen
+  }
+  render() {
+    return (
+      <div className="news-container">
+        <Switch>
+          {Routers.map(({ name, path, component: Component }) => {
+            return <Route key={name} path={path} component={Component} />;
+          })}
+        </Switch>
+      </div>
+    );
+  }
+}
+const mapDispatch = dispatch => {
+  return {
+    dispatch
+  };
+};
+// 通过withRouter来获取history
+export default withRouter <
+  any >
+  connect(
+    undefined,
+    mapDispatch
+  )(App);
+```
+
+#### service 同构
+
+上面我们统一了客户端和服务端获取异步数据的逻辑,实际的发送请求都是通过`service/news`提供。
+
+```js
+import { getItem, getTopStories, getUser } from 'service/news';
+```
+
+`shared/service/news`的实现如下
+
+```js
+import { serverUrl } from 'constants/url';
+import http from 'shared/lib/http';
+async function request(api, opts) {
+  const result = await http.get(`${serverUrl}/${api}`, opts);
+  return result;
+}
+async function getTopStories(page = 1, pageSize = 10) {
+  let idList = [];
+  try {
+    idList = await request('topstories.json', {
+      params: {
+        page,
+        pageSize
+      }
+    });
+  } catch (err) {
+    idList = [];
+  }
+  // parallel GET detail
+  const newsList = await Promise.all(
+    idList.slice(0, 10).map(id => {
+      const url = `${serverUrl}/item/${id}.json`;
+      return http.get(url);
+    })
+  );
+  return newsList;
+}
+
+async function getItem(id) {
+  return await request(`item/${id}.json`);
+}
+
+async function getUser(id) {
+  return await request(`user/${id}.json`);
+}
+
+export { getTopStories, getItem, getUser };
+```
+客户端和服务端的差异被我们使用`lib/http`屏蔽了。处理`lib/http`同构需要考虑两个问题：
+1. 上层api保持一致，因此我们考虑使用同时支持node和browser的请求库，这里使用axios
+2. server和client的请求库应该是相互独立的，不能互相干扰，我们这里使用axios作为请求库，因为其每个instance配置是全局的，会导致互相干扰，因此我们需要创立两个instance。
+```js
+// src/shared/service/lib/http
+import client from './client';
+import server from './server';
+
+export default (__BROWSER__ ? client : server);
+// src/shared/service/lib/http/client.js
+import axios from 'axios';
+const instance = axios.create();
+instance.interceptors.response.use(
+  response => {
+    return response;
+  },
+  err => {
+    return Promise.reject(err);
+  }
+);
+export default instance;
+
+// src/shared/service/lib/http/server.js
+import axios from 'axios';
+import * as AxiosLogger from 'axios-logger';
+const instance = axios.create();
+instance.interceptors.request.use(AxiosLogger.requestLogger);
+instance.interceptors.response.use(
+  response => {
+    AxiosLogger.responseLogger(response);
+    return response;
+  },
+  err => {
+    return Promise.reject(err);
+  }
+);
+export default instance;
+
 ```

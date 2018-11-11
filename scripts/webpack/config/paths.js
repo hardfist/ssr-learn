@@ -11,6 +11,7 @@ module.exports = {
   dotenv: resolveApp('.env'), // .env文件
   appClientDir: resolveApp('src/client'),
   appServerDir: resolveApp('src/server'),
+  appSharedDir: resolveApp('src/shared'),
   appClientEntry: resolveApp('src/client/entry'), // client 的webpack入口
   appServerEntry: resolveApp('src/server/app') // server 的webpack入口
 };

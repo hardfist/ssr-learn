@@ -1,8 +1,8 @@
 import { serverUrl } from 'constants/url';
-import http from 'lib/http';
+import http from 'shared/lib/http';
 async function request(api, opts) {
   const result = await http.get(`${serverUrl}/${api}`, opts);
-  return result;
+  return result.data;
 }
 async function getTopStories(page = 1, pageSize = 10) {
   let idList = [];
@@ -19,8 +19,7 @@ async function getTopStories(page = 1, pageSize = 10) {
   // parallel GET detail
   const newsList = await Promise.all(
     idList.slice(0, 10).map(id => {
-      const url = `${serverUrl}/item/${id}.json`;
-      return http.get(url);
+      return request(`item/${id}.json`);
     })
   );
   return newsList;

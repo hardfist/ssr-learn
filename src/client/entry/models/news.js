@@ -1,4 +1,4 @@
-import { getItem, getTopStories, getUser } from 'service/news';
+import { getItem, getTopStories, getUser } from 'shared/service/news';
 
 export const news = {
   state: {

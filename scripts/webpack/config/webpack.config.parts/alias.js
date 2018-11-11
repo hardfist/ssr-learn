@@ -3,7 +3,10 @@ module.exports = () => {
   const alias = () => {
     return {
       resolve: {
-        modules: ['node_modules', paths.appClientDir]
+        modules: ['node_modules', paths.appClientDir],
+        alias: {
+          shared: paths.appSharedDir
+        }
       }
     };
   };
