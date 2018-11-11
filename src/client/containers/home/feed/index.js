@@ -1,9 +1,32 @@
-import React, { Component } from 'react';
-
-class Feed extends Component {
+import Article from 'components/article';
+import Layout from 'components/layout';
+import React from 'react';
+import { connect } from 'react-redux';
+class Feed extends React.Component {
   render() {
-    return <div>Feed</div>;
+    const { list } = this.props;
+    return (
+      <Layout>
+        <div className="news-view view v-trnasition" />
+        {list.map((item, idx) => (
+          <Article key={idx} item={item} index={idx} />
+        ))}
+      </Layout>
+    );
   }
 }
+const mapState = state => {
+  return {
+    list: state.news.list
+  };
+};
+const mapDispatch = dispatch => {
+  return {
+    loadList: dispatch.news.loadList
+  };
+};
 
-export default Feed;
+export default connect(
+  mapState,
+  mapDispatch
+)(Feed);

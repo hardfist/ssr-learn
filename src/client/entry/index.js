@@ -1,26 +1,33 @@
 import App from './app';
+import { Provider } from 'react-redux';
 import { BrowserRouter, StaticRouter } from 'react-router-dom';
 import routes from './routers';
 import ReactDOM from 'react-dom';
 import React from 'react';
+import { createStore } from './models';
 
 const clientRender = () => {
+  const store = createStore(window.__INITIAL_STATE__);
   return ReactDOM.hydrate(
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>,
+    <Provider store={store}>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </Provider>,
     document.getElementById('root')
   );
 };
 
 const serverRender = props => {
   return (
-    <StaticRouter location={props.url} context={props.context}>
-      <App />
-    </StaticRouter>
+    <Provider store={props.store}>
+      <StaticRouter location={props.url} context={props.context}>
+        <App />
+      </StaticRouter>
+    </Provider>
   );
 };
 
 export default (__BROWSER__ ? clientRender() : serverRender);
 
-export { serverRender as App, routes };
+export { serverRender as App, routes, createStore };

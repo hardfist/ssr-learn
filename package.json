@@ -14,18 +14,26 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@rematch/core": "^1.0.6",
+    "@rematch/immer": "^1.1.0",
+    "axios": "^0.18.0",
+    "axios-logger": "^0.1.2",
     "copy-webpack-plugin": "^4.6.0",
     "dotenv": "^6.1.0",
     "koa": "^2.6.1",
     "koa-nunjucks-2": "^3.0.2",
     "koa-router": "^7.4.0",
     "koa-static": "^5.0.0",
+    "moment": "^2.22.2",
     "node-sass": "^4.10.0",
+    "nunjucks": "^3.1.4",
     "react": "^16.6.0",
     "react-dom": "^16.6.0",
+    "react-redux": "^5.1.0",
     "react-router-dom": "^4.3.1",
     "resolve-url-loader": "^3.0.0",
-    "sass-loader": "^7.1.0"
+    "sass-loader": "^7.1.0",
+    "serialize-javascript": "^1.5.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.1.2",

@@ -708,3 +708,131 @@ const RedirectWithStatus = ({ from, to, status, exact }) => (
   />
 );
 ```
+
+### 数据预取和状态
+
+服务端渲染的时候，如果应用程序依赖于一些异步数据，我们需要在服务端预先获取这些数据，并将预取的数据同步到客户端，如果服务端和客户端
+获取的状态不一致，就会导致注水失败。
+因此我们不能将状态直接存放到视图组件内部，需要将数据存放在视图组件之外，需要单独的状态容器存放我们的状态。这样服务端渲染实际分为如下几步：
+
+1. 服务端根据路由获取对应页面的异步数据。
+2. 服务端使用异步数据初始化服务端状态容器。
+3. 服务端根据服务端状态容器进行服务端渲染，生成 html。
+4. 服务端将初始化的状态容器里的状态通过页面模板下发到客户端。
+5. 客户端从页面模板中获取服务端下发的初始状态。
+6. 客户端根据初始状态初始化客户端状态容器。
+7. 视图组件根据状态容器的状态，进行注水操作。
+
+我们的应用包含三个页面
+
+- 列表页
+- 详情页
+- 用户页
+  每个页面都需要根据 url 里的参数去异步的获取数据。因此我们需要使用 redux 来支持服务端渲染，
+  直接使用 redux 来编写代码，代码十分冗余，我们使用`rematch` 简化 redux 的使用。
+
+#### 创建 store
+
+首先创建一个 models 文件夹，这里存放所有与状态相关的文件。
+
+```js
+// src/client/entry/models/index.js
+import { init } from '@rematch/core';
+import immerPlugin from '@rematch/immer';
+import { news } from './news'; // 与dva的model概念类似。包含state, reducer, effects等。
+const initPlugin = initialState => {
+  return {
+    config: {
+      redux: {
+        initialState
+      }
+    }
+  };
+};
+
+export function createStore(initialState) {
+  const store = init({
+    models: { news },
+    plugins: [
+      immerPlugin(), // 使用immer来实现immutable
+      initPlugin(initialState) // 使用initialState初始化状态容器
+    ]
+  });
+  return store;
+}
+/// src/client/entry/models/news.js
+
+// 假定我们有一个可以返回 Promise 的 通用 API（请忽略此 API 具体实现细节）
+import { getItem, getTopStories, getUser } from 'service/news';
+
+export const news = {
+  state: {
+    detail: {
+      item: {},
+      comments: []
+    },
+    user: {},
+    list: []
+  },
+  reducers: {
+    updateUser(state, payload) {
+      state.user = payload;
+    },
+    updateList(state, payload) {
+      state.list = payload;
+    },
+    updateDetail(state, payload) {
+      state.detail = payload;
+    }
+  },
+  effects: dispatch => ({
+    async loadUser(user_id) {
+      const userInfo = await getUser(user_id);
+      dispatch.news.updateUser(userInfo);
+    },
+    async loadList(page = 1) {
+      const list = await getTopStories(page);
+      dispatch.news.updateList(list);
+    },
+    async loadDetail(item_id) {
+      const newsInfo = await getItem(item_id);
+      const commentList = await Promise.all(
+        newsInfo.kids.map(_id => getItem(_id))
+      );
+      dispatch.news.updateDetail({
+        item: newsInfo,
+        comments: commentList
+      });
+    }
+  })
+};
+```
+#### 注入store
+创建完store后，我们就可以在应用中使用store了。
+```js
+// src/client/entry/index.js
+
+import { createStore } from './models';
+
+const clientRender = () => {
+  const store = createStore(window.__INITIAL_STATE__); // 将
+  return ReactDOM.hydrate(
+    <Provider store={store}>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </Provider>,
+    document.getElementById('root')
+  );
+};
+
+const serverRender = props => {
+  return (
+    <Provider store={props.store}>
+      <StaticRouter location={props.url} context={props.context}>
+        <App />
+      </StaticRouter>
+    </Provider>
+  );
+};
+```

@@ -11,6 +11,7 @@ const baseConfig = (target, env) => {
   return merge(
     {
       context: process.cwd(),
+      watch: true,
       mode: 'production',
       output: {
         path: path.join(root, 'output'),

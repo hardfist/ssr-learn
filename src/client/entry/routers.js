@@ -6,17 +6,26 @@ export default [
   {
     name: 'detail',
     path: '/news/item/:item_id',
-    component: Detail
+    component: Detail,
+    async asyncData({ dispatch }, { params }) {
+      await dispatch.news.loadDetail(params.item_id);
+    }
   },
   {
     name: 'user',
     path: '/news/user/:user_id',
-    component: User
+    component: User,
+    async asyncData(store, { params }) {
+      await store.dispatch.news.loadUser(params.user_id);
+    }
   },
   {
     name: 'feed',
     path: '/news/feed/:page',
-    component: Feed
+    component: Feed,
+    async asyncData(store, { params }) {
+      await store.dispatch.news.loadList(params.page);
+    }
   },
   {
     name: '404',
