@@ -1073,7 +1073,6 @@ export default withRouter <
     mapDispatch
   )(App);
 ```
-
 #### service 同构
 
 上面我们统一了客户端和服务端获取异步数据的逻辑,实际的发送请求都是通过`service/news`提供。
@@ -1162,3 +1161,5 @@ instance.interceptors.response.use(
 export default instance;
 
 ```
+### 代码分割 && 动态加载
+至此我们已经实现了一个SPA + SSR的页面，但是此时仍然存在的一个问题是，每次首屏加载需要把所有页面的包一起加载，导致首屏的js包太大，我们期望非首屏的js包都可以异步加载，这样就可以大大减小首屏的js包大小。基于webpack实现代码分割比较简单，只需要使用`dynamic import`,webpack自动的会将动态导入的模块进行拆包处理，然而在SSR情况下，就显得复杂很多。

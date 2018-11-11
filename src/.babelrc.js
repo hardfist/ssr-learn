@@ -1,18 +1,22 @@
-module.exports = {
-  presets: [
-    [
-      "@babel/env",
-      {
-        modules: 'commonjs',
-        targets: {
-          node: "current"
+module.exports = api => {
+  const env = api.env();
+  console.log('env:', env);
+  return {
+    presets: [
+      [
+        '@babel/env',
+        {
+          modules: 'commonjs',
+          useBuiltIns: 'usage'
         }
-      }
+      ],
+      '@babel/react'
     ],
-    "@babel/react"
-  ],
-  plugins: [
-    '@babel/plugin-proposal-class-properties'
-  ]
+    plugins: [
+      '@babel/plugin-proposal-class-properties',
+      '@babel/plugin-syntax-dynamic-import',
+      'react-loadable/babel',
+      'babel-plugin-macros'
+    ]
+  };
 };
-

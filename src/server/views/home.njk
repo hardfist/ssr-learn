@@ -3,11 +3,17 @@
 <head>
   <title>SSR with RR</title>
   <link rel="stylesheet" href={{manifest['main.css']}}>
+{% for item in css_bundles %}
+<link rel="stylesheet"  href={{item.publicPath}}>
+{% endfor %}
 </head>
 
 <body>
   <div id="root">{{markup|safe}}</div>
 </body>
+{% for item in js_bundles %}
+<script src={{item.publicPath}}></script>
+{% endfor %}
 <script>window.__INITIAL_STATE__ = {{serialize(initial_state)|safe}}</script>
 <script src={{manifest['main.js']}}></script>
 </html>

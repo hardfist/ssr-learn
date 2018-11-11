@@ -1,12 +1,15 @@
-import Detail from 'containers/home/detail';
-import User from 'containers/home/user';
-import Feed from 'containers/home/feed';
 import NotFound from 'components/not-found';
+import Loading from 'components/loading';
+import Loadable from 'react-loadable';
 export default [
   {
     name: 'detail',
     path: '/news/item/:item_id',
-    component: Detail,
+    component: Loadable({
+      loader: () => import('../containers/home/detail'),
+      loading: Loading,
+      delay: 500
+    }),
     async asyncData({ dispatch }, { params }) {
       await dispatch.news.loadDetail(params.item_id);
     }
@@ -14,7 +17,12 @@ export default [
   {
     name: 'user',
     path: '/news/user/:user_id',
-    component: User,
+    component: Loadable({
+      loader: () => import('../containers/home/user'),
+      loading: Loading,
+      delay: 500
+    }),
+    //component: routes['../containers/home/user'],
     async asyncData(store, { params }) {
       await store.dispatch.news.loadUser(params.user_id);
     }
@@ -22,7 +30,11 @@ export default [
   {
     name: 'feed',
     path: '/news/feed/:page',
-    component: Feed,
+    component: Loadable({
+      loader: () => import('../containers/home/feed'),
+      loading: Loading,
+      delay: 500
+    }),
     async asyncData(store, { params }) {
       await store.dispatch.news.loadList(params.page);
     }

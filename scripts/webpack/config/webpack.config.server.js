@@ -1,7 +1,7 @@
 const baseConfig = require('./webpack.config.base');
 const nodeExternals = require('webpack-node-externals');
-const copyWebpackPlugin = require('copy-webpack-plugin');
 const webpack = require('webpack');
+const copyWebpackPlugin = require('copy-webpack-plugin');
 const merge = require('webpack-merge');
 const path = require('path');
 const paths = require('./paths');
@@ -23,6 +23,9 @@ module.exports = (target, env) =>
     },
     externals: [nodeExternals()],
     plugins: [
+      new webpack.optimize.LimitChunkCountPlugin({
+        maxChunks: 1
+      }), // ssr 情况下禁止前端拆包
       new copyWebpackPlugin([
         {
           from: path.join(paths.appServerDir, 'views'),
