@@ -19,7 +19,7 @@ export default class Article extends React.Component {
         <p className="subtext">
           <span>
             {item.score} points by{' '}
-            <a href={`/news/user/${item.by}`}>{item.by}</a>
+            <Link to={`/news/user/${item.by}`}>{item.by}</Link>
           </span>
           {Util.relativeTime(item.time)}
           <span className="comments-link">

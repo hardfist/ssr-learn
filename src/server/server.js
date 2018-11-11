@@ -5,9 +5,12 @@ import path from 'path';
 import koaNunjucks from 'koa-nunjucks-2';
 import { matchPath } from 'react-router-dom';
 import { renderToString } from 'react-dom/server';
+import { getBundles } from 'react-loadable/webpack';
+import Loadable from 'react-loadable';
 import serialize from 'serialize-javascript';
 import { App, createStore, routes } from '../client/entry';
 const manifest = require(process.env.appManifest);
+const stats = require(process.env.appLoadalbeManifest);
 
 const app = new Koa();
 app.use(async (ctx, next) => {
@@ -33,6 +36,7 @@ app.use(async ctx => {
   const store = createStore();
   const context = {};
   const promises = [];
+  const modules = [];
   routes.some(route => {
     const match = matchPath(ctx.url, route);
     if (match) {
@@ -41,8 +45,13 @@ app.use(async ctx => {
   });
   await Promise.all(promises);
   const markup = renderToString(
-    <App url={ctx.url} context={context} store={store} />
+    <Loadable.Capture report={moduleName => modules.push(moduleName)}>
+      <App url={ctx.url} context={context} store={store} />
+    </Loadable.Capture>
   );
+  const bundles = getBundles(stats, modules);
+  // eslint-disable-next-line
+  console.log('bundles:', modules, bundles);
   if (context.url) {
     ctx.status = context.status;
     ctx.redirect(context.url);
@@ -55,6 +64,7 @@ app.use(async ctx => {
   });
 });
 export async function startServer() {
+  await Loadable.preloadAll();
   app.listen(process.env.PORT || 3000, () => {
     // eslint-disable-next-line no-console
     console.log('start server at port:', process.env.PORT || 3000);

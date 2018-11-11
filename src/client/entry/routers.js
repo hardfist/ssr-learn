@@ -1,12 +1,23 @@
-import Detail from 'containers/home/detail';
-import User from 'containers/home/user';
-import Feed from 'containers/home/feed';
 import NotFound from 'components/not-found';
+import Loading from 'components/loading';
+import Loadable from 'react-loadable';
+import importAll from 'import-all.macro';
+const component_glob = '../containers/home/?(detail|feed|user)';
+
+const routes = importAll.deferred(component_glob);
+for (const key of Object.keys(routes)) {
+  if (typeof routes[key] === 'function') {
+    routes[key] = Loadable({
+      loading: Loading,
+      loader: routes[key]
+    });
+  }
+}
 export default [
   {
     name: 'detail',
     path: '/news/item/:item_id',
-    component: Detail,
+    component: routes['../containers/home/detail'],
     async asyncData({ dispatch }, { params }) {
       await dispatch.news.loadDetail(params.item_id);
     }
@@ -14,7 +25,7 @@ export default [
   {
     name: 'user',
     path: '/news/user/:user_id',
-    component: User,
+    component: routes['../containers/home/user'],
     async asyncData(store, { params }) {
       await store.dispatch.news.loadUser(params.user_id);
     }
@@ -22,7 +33,7 @@ export default [
   {
     name: 'feed',
     path: '/news/feed/:page',
-    component: Feed,
+    component: routes['../containers/home/feed'],
     async asyncData(store, { params }) {
       await store.dispatch.news.loadList(params.page);
     }

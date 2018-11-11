@@ -26,6 +26,8 @@ const getClientEnv = () => {
     NODE_ENV: process.env.NODE_ENV || 'development',
     PORT: process.env.PORT || 3000,
     PUBLIC_PATH: process.env.PUBLIC_PATH || '/',
+    ENABLE_SPLIT: process.env.ENABLE_SPLIT || true,
+    appLoadalbeManifest: paths.appLoadableManifest,
     appManifest: paths.appManifest,
     appBuild: paths.appBuild,
     appSrc: paths.appSrc,
