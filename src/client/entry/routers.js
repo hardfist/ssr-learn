@@ -6,7 +6,8 @@ export default [
     name: 'detail',
     path: '/news/item/:item_id',
     component: Loadable({
-      loader: () => import('../containers/home/detail'),
+      loader: () =>
+        import(/* webpackChunkName: "detail" */ '../containers/home/detail'),
       loading: Loading,
       delay: 500
     }),
@@ -18,11 +19,11 @@ export default [
     name: 'user',
     path: '/news/user/:user_id',
     component: Loadable({
-      loader: () => import('../containers/home/user'),
+      loader: () =>
+        import(/* webpackChunkName: "user" */ '../containers/home/user'),
       loading: Loading,
       delay: 500
     }),
-    //component: routes['../containers/home/user'],
     async asyncData(store, { params }) {
       await store.dispatch.news.loadUser(params.user_id);
     }
@@ -31,7 +32,8 @@ export default [
     name: 'feed',
     path: '/news/feed/:page',
     component: Loadable({
-      loader: () => import('../containers/home/feed'),
+      loader: () =>
+        import(/* webpackChunkName: "feed" */ '../containers/home/feed'),
       loading: Loading,
       delay: 500
     }),

@@ -96,6 +96,15 @@ const serverConfig = {
 module.exports = [serverConfig];
 ```
 
+#### 代码编译
+
+在服务端渲染的情况下，服务端需要导入 React 组件，因为 node 原生不支持 jsx 的语法，如果想直接使用 jsx 语法，势必需要对 react 组件代码进行编译。
+对于服务端渲染，其代码可以分为两部分，react 组件代码(`src/client/app.js`)，server 相关代码(`src/server/app.js`)，根据不同的处理方式，可分为如下几种编译方式：
+
+1. 仅对 react 组件代码使用 webpack 进行编译，server 使用原生的 js,好处是前后端完全分离。
+2. 对 react 组件和 server 一起使用 babel 进行编译。好处是开发模式配置比较简单，使用 babel-node 即可，问题是需要做一些 hack。
+3. 对 react 组件和 server 一起使用 webpack 进行编译。好处是尽可能复用 webpack 的配置，且使用者配置比较简单。
+
 与前端编译不同的地方在于
 
 1. target 为 node:使用 require 去加载 chunk
@@ -1027,7 +1036,7 @@ const clientRender = () => {
 综上我们考虑在应用入口处通过 history.listen 里进行客户端数据预取操作。
 
 ```jsx
-import  React from 'react';
+import React from 'react';
 import { Switch, Route } from 'react-router-dom';
 import { withRouter, matchPath } from 'react-router';
 import { connect } from 'react-redux';
@@ -1073,6 +1082,7 @@ export default withRouter <
     mapDispatch
   )(App);
 ```
+
 #### service 同构
 
 上面我们统一了客户端和服务端获取异步数据的逻辑,实际的发送请求都是通过`service/news`提供。
@@ -1122,9 +1132,12 @@ async function getUser(id) {
 
 export { getTopStories, getItem, getUser };
 ```
+
 客户端和服务端的差异被我们使用`lib/http`屏蔽了。处理`lib/http`同构需要考虑两个问题：
-1. 上层api保持一致，因此我们考虑使用同时支持node和browser的请求库，这里使用axios
-2. server和client的请求库应该是相互独立的，不能互相干扰，我们这里使用axios作为请求库，因为其每个instance配置是全局的，会导致互相干扰，因此我们需要创立两个instance。
+
+1. 上层 api 保持一致，因此我们考虑使用同时支持 node 和 browser 的请求库，这里使用 axios
+2. server 和 client 的请求库应该是相互独立的，不能互相干扰，我们这里使用 axios 作为请求库，因为其每个 instance 配置是全局的，会导致互相干扰，因此我们需要创立两个 instance。
+
 ```js
 // src/shared/service/lib/http
 import client from './client';
@@ -1159,7 +1172,345 @@ instance.interceptors.response.use(
   }
 );
 export default instance;
-
 ```
+
 ### 代码分割 && 动态加载
-至此我们已经实现了一个SPA + SSR的页面，但是此时仍然存在的一个问题是，每次首屏加载需要把所有页面的包一起加载，导致首屏的js包太大，我们期望非首屏的js包都可以异步加载，这样就可以大大减小首屏的js包大小。基于webpack实现代码分割比较简单，只需要使用`dynamic import`,webpack自动的会将动态导入的模块进行拆包处理，然而在SSR情况下，就显得复杂很多。
+
+至此我们已经实现了一个 SPA + SSR 的页面，但是此时仍然存在的一个问题是，每次首屏加载需要把所有页面的包一起加载，导致首屏的 js 包太大，我们期望非首屏的 js 包都可以异步加载，这样就可以大大减小首屏的 js 包大小。基于 webpack 实现代码分割比较简单，只需要使用`dynamic import`,webpack 自动的会将动态导入的模块进行拆包处理，然而在 SSR 情况下，就显得复杂很多。
+
+#### 异步组件
+
+React 在 16.6 发布了对`React.lazy`和`React.Suspense`的支持，其可很好的用于实现代码分割
+
+```js
+import React, { lazy, Suspense } from 'react';
+const OtherComponent = lazy(() => import('./OtherComponent'));
+
+function MyComponent() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <OtherComponent />
+    </Suspense>
+  );
+}
+```
+
+很可惜，其暂不支持服务端渲染，因此我们使用`react-loadable`来配合 webpack 实现代码分割。
+首先我们将路由里的组件全部替换为 Loadable 组件.
+
+```js
+import NotFound from 'components/not-found';
+import Loading from 'components/loading';
+import Loadable from 'react-loadable';
+export default [
+  {
+    name: 'detail',
+    path: '/news/item/:item_id',
+    component: Loadable({
+      loader: () => import('../containers/home/detail'),
+      loading: Loading,
+      delay: 500
+    }),
+    async asyncData({ dispatch }, { params }) {
+      await dispatch.news.loadDetail(params.item_id);
+    }
+  },
+  {
+    name: 'user',
+    path: '/news/user/:user_id',
+    component: Loadable({
+      loader: () => import('../containers/home/user'),
+      loading: Loading,
+      delay: 500
+    }),
+    //component: routes['../containers/home/user'],
+    async asyncData(store, { params }) {
+      await store.dispatch.news.loadUser(params.user_id);
+    }
+  },
+  {
+    name: 'feed',
+    path: '/news/feed/:page',
+    component: Loadable({
+      loader: () => import('../containers/home/feed'),
+      loading: Loading,
+      delay: 500
+    }),
+    async asyncData(store, { params }) {
+      await store.dispatch.news.loadList(params.page);
+    }
+  },
+  {
+    name: '404',
+    component: NotFound
+  }
+];
+```
+
+#### 编译配置
+
+首先我们需要添加对`dynamic import`语法的支持，由于`dynamic import`暂时处于 stage 3 阶段，所有`@babe/preset-env`并未包含处理`dynamic import`的插件，我们需要自己安装`@babel/plugin-syntax-dynamic-import`进行处理，该插件并未对`dynamic import`做任何转换，对其转换的工作由`webpack`负责处理，其只负责语法的支持。对于没有 webpack 的环境可以使用`dynamic-import-node`将其转换为`require`得以支持。
+
+```js
+// src/.babelrc
+module.exports = api => {
+  return {
+    presets: [
+      [
+        '@babel/env',
+        {
+          modules: 'commonjs',
+          useBuiltIns: 'usage'
+        }
+      ],
+      '@babel/react'
+    ],
+    plugins: [
+      '@babel/plugin-proposal-class-properties',
+      '@babel/plugin-syntax-dynamic-import', // 支持dyanmic import
+      'react-loadable/babel',
+      'babel-plugin-macros'
+    ]
+  };
+};
+```
+
+我们接着需要为每个 chunk 生成单独的文件，因此需要配置对应的 chunkName
+
+```js
+// scripts/webpack/config/webpack.config.client.js
+...
+    output: {
+      filename: '[name].[chunkhash:8].js',
+      chunkFilename: '[name].chunk.[chunkhash:8].js', // 配置chunkName
+    }
+...
+```
+
+对于服务端我们并不希望对 server 生成的 bundle 进行拆包处理，因此可以考虑禁止对 server 进行拆包。
+
+```js
+// scripts/webpack/config/webpack.config.server.js
+   plugins: [
+      new webpack.optimize.LimitChunkCountPlugin({
+        maxChunks: 1
+    })], // 禁止server的bundle进行拆包
+```
+
+### chunk 收集和加载
+
+进行代码分割之后，我们接下来需要根据路由加载对应的 chunk。这里服务端和客户端的处理方式有很大的不同。
+
+无论是在 server 还是 client，webpack 对 import('xxx')的处理方式比较类似。
+**Input**
+
+```js
+import('xxx');
+```
+
+**Output**
+
+```js
+Promise.resolve().then(() => require('test-module'));
+```
+
+以`() => import('../containers/home/detail')`为例观察下 webpack 生成的代码。
+
+```js
+//output/server.js
+return Promise.all(
+  /*! import() | detail */ [
+    __webpack_require__.e('vendors~detail~feed~user'),
+    __webpack_require__.e('detail~feed'),
+    __webpack_require__.e('detail')
+  ]
+).then(
+  __webpack_require__.t.bind(
+    null,
+    /*! ../containers/home/detail */ './src/client/containers/home/detail/index.js',
+    7
+  )
+);
+```
+
+```js
+// output/main.js
+return Promise.all(
+  /*! import() | detail */ [
+    __webpack_require__.e('vendors~detail~feed~user'),
+    __webpack_require__.e('detail~feed'),
+    __webpack_require__.e('detail')
+  ]
+).then(
+  __webpack_require__.t.bind(
+    null,
+    /*! ../containers/home/detail */ './src/client/containers/home/detail/index.js',
+    7
+  )
+);
+```
+
+可以看到 server 和 client 生成的代码是一样的，且实际的模块加载都是在 Promise.resolve()的回调。
+
+#### 服务端 chunk 预加载
+
+服务端我们并不需要按需加载，只需要在启动前把所有的异步的 chunk 全部加载好了即可。虽然在服务端我们可以同步加载所有模块，但是因为
+webpack 将`import('xxx)`转换为`Promise.resolve().then(() => require('test-module'))`,这使得我们无法同步的去加载 chunk，
+`react-loadable`为我们提供了`preloadAll`用于在 server 启动前加载所有的 chunk。
+
+```js
+// src/server/server.js
+export async function startServer() {
+  await Loadable.preloadAll(); // 确保所有dyamic module都加载完
+  app.listen(process.env.PORT || 3000, () => {
+    // eslint-disable-next-line no-console
+    console.log('start server at port:', process.env.PORT || 3000);
+  });
+}
+```
+
+##### 客户端收集与加载
+
+客户端的 chunk 加载就显得复杂的多主要分为五个步骤：
+
+1. 将 module 与 Loadable 组件进行关联。
+2. 将当前路由匹配到 module 进行关联。
+3. 根据 module 匹配对应 chunk
+4. 将 chunk 注入页面模板
+5. 主程序启动前激活 chunk，避免出现 loading
+
+##### Loadable 组件关联 module
+
+为了后续在运行时能够根据路由匹配到需要加载的 module，我们需要将 module 信息和 Loadable 组件进行关联。我们既可以通过手动关联
+
+```js
+ {
+    name: 'detail',
+    path: '/news/item/:item_id',
+    component: Loadable({
+      loader: () =>
+        import(/* webpackChunkName: "detail" */ '../containers/home/detail'),
+      loading: Loading,
+      modules: ['../containers/home/detail'], // 关联module信息
+      webpack: ()=> [require.resolveWeak('../containers/home/detail')] // 这里只能使用resolveWeak,不能使用require.resolve否则会导致code split 失效
+      delay: 500
+    }),
+    async asyncData({ dispatch }, { params }) {
+      await dispatch.news.loadDetail(params.item_id);
+    }
+  },
+```
+
+如果对每个 Loadable 组件都手动的注入关联关系十分麻烦，为此`react-loadable`提供了 babel 插件为我们自动注入管理关系。
+
+```js
+...
+plugins: [
+  ...,
+  'react-loadable/babel',
+  ...
+]
+...
+```
+
+##### 当前路由关联 module
+
+Loadable 组件关联完 module 信息后，我们就可以根据当前路由匹配到本次渲染所需的所有 bundle 信息了。`react-loadable`通过`Loadable.Capture`来收集这个依赖关系，`Loadable.Capture`会根据上面的管理 module 信息，匹配到所有 module。
+
+```js
+...
+  const modules = [];
+  const markup = renderToString(
+    <Loadable.Capture report={moduleName => modules.push(moduleName)}>
+      <App url={ctx.url} context={context} store={store} />
+    </Loadable.Capture>
+  );
+...
+```
+
+##### 根据 module 匹配 chunk
+
+收集完当前路由匹配的所有 module 后，根据 module 到 chunk 映射既可以获取到当前路由匹配的所有 chunk，我们使用`react-loadable`提供的 webpack 插件来获取 module 到 chunk 的映射。
+
+```js
+// scripts/webpack/config/webpack.config.client.js
+const { ReactLoadablePlugin } = require('react-loadable/webpack');
+....
+plugins: [
+  new ReactLoadablePlugin({
+    filename: paths.appLoadableManifest //
+  })
+];
+// scripts/webpack/config/paths.js
+module.exports = {
+  ...,
+  appLoadableManifest: resolveApp('output/react-loadable.json'), // module到chunk的映射文件
+}
+```
+
+这样既可生成`react-loadable.json`文件，其内容如下
+
+```json
+ "../containers/home/detail": [
+    {
+      "id": "./src/client/containers/home/detail/index.js",
+      "name": "./src/client/containers/home/detail/index.js",
+      "file": "detail.chunk.676c84f3.js",
+      "publicPath": "/detail.chunk.676c84f3.js"
+    },
+    {
+      "id": "./src/client/containers/home/detail/index.js",
+      "name": "./src/client/containers/home/detail/index.js",
+      "file": "detail.chunk.676c84f3.js.map",
+      "publicPath": "/detail.chunk.676c84f3.js.map"
+    }
+  ],
+```
+
+这样通过`react-loadable`提供的`getBundles`即可获取匹配的 chunk。然后注入模板即可。和服务端类似，虽然chunk文件加载，仍然
+需要手动的加载chunk里包含的module。通过`react-loadable`的`preloadAll`注册module。
+
+```js
+// src/server/server.js
+app.use(async (ctx, next) => {
+  ...
+  const modules = [];
+  const markup = renderToString(
+    <Loadable.Capture report={moduleName => modules.push(moduleName)}>
+      <App url={ctx.url} context={context} store={store} />
+    </Loadable.Capture>
+  );
+  const bundles = getBundles(stats, modules); // 获取chunk信息
+  const js_bundles = bundles.filter(({ file }) => file.endsWith('.js'));
+  const css_bundles = bundles.filter(({ file }) => file.endsWith('.css'));
+  await ctx.render('home', {
+    markup,
+    initial_state: store.getState(),
+    manifest,
+    css_bundles, // 注入css chunk
+    js_bundles // 注入js chunk
+  });
+});
+```
+chunk注入模板
+```html
+<html>
+
+<head>
+  <title>SSR with RR</title>
+  <link rel="stylesheet" href={{manifest['main.css']}}>
+{% for item in css_bundles %}
+<link rel="stylesheet"  href={{item.publicPath}}> 注入css chunk
+{% endfor %}
+</head>
+
+<body>
+  <div id="root">{{markup|safe}}</div>
+</body>
+{% for item in js_bundles %}
+<script src={{item.publicPath}}></script> 注入js chunk
+{% endfor %}
+<script>window.__INITIAL_STATE__ = {{serialize(initial_state)|safe}}</script>
+<script src={{manifest['main.js']}}></script>
+</html>
+```

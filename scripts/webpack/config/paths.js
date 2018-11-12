@@ -4,7 +4,7 @@ const appDirectory = fs.realpathSync(process.cwd());
 const resolveApp = relativePath => path.resolve(appDirectory, relativePath);
 
 module.exports = {
-  appLoadableManifest: resolveApp('output/react-loadable.json'),
+  appLoadableManifest: resolveApp('output/react-loadable.json'), // module到chunk的映射文件
   appManifest: resolveApp('output/manifest.json'), // client编译manifest
   appBuild: resolveApp('output'), //client && server编译生成目录
   appSrc: resolveApp('src'), // cliet && server source dir

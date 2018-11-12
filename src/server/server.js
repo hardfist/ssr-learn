@@ -36,7 +36,6 @@ app.use(async ctx => {
   const store = createStore();
   const context = {};
   const promises = [];
-  const modules = [];
   routes.some(route => {
     const match = matchPath(ctx.url, route);
     if (match) {
@@ -44,6 +43,7 @@ app.use(async ctx => {
     }
   });
   await Promise.all(promises);
+  const modules = [];
   const markup = renderToString(
     <Loadable.Capture report={moduleName => modules.push(moduleName)}>
       <App url={ctx.url} context={context} store={store} />
@@ -51,7 +51,7 @@ app.use(async ctx => {
   );
   const bundles = getBundles(stats, modules);
   // eslint-disable-next-line
-  console.log('bundles:', bundles);
+  console.log('bundles:', modules,bundles);
   const js_bundles = bundles.filter(({ file }) => file.endsWith('.js'));
   const css_bundles = bundles.filter(({ file }) => file.endsWith('.css'));
   if (context.url) {
