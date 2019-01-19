@@ -691,7 +691,8 @@ app.use(async ctx => {
   if (context.status) {
     if (context.status === '404') {
       console.warn('page not found'); //服务端自定义404处理逻辑
-      // ctx.redirect('/404'); 客户端已经做了404的容错，如果服务端想渲染服务端生成的的404页面，可以在此执行，否则可以直接复用客户端的404容错。
+      // ctx.redirect('/404'); 客户端已经做了404的容错，如果服务端想渲染服务端生成的的404页面，
+      可以在此执行，否则可以直接复用客户端的404容错。
     }
   }
   await ctx.render('home', {
