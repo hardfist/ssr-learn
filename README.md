@@ -1,5 +1,7 @@
 # REACT 服务端渲染最全教程
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/hardfist/ssr-learn.svg)](https://greenkeeper.io/)
+
 本系列将从零到一讲述如何搭建一个支持多页面+ 单页面 + Code Split + SSR + i18n + Redux 的 HackerNews。重点讲述构建复杂 SSR 系统碰到的各种问题。所有中间过程都可以在 codesandbox 上查看。
 首先编写一个最基础的 SSR 渲染页面,我们服务端使用 Koa ，前端使用 React。
 
